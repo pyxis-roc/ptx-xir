@@ -4,7 +4,7 @@ def read_integer_test_cases(tcfile, nargs):
     out = []
     with open(tcfile, "r") as f:
         for l in f:
-            ls = l.strip().split(",")
+            ls = l.strip().split()
 
             ls = ls[:nargs]
             out.append([int(x) for x in ls])
