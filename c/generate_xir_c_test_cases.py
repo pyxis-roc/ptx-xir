@@ -167,9 +167,13 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
     with open(dst / 'Makefile', 'w') as f:
         f.write(f"all: {' '.join(tests.keys())}\n\n")
         f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -c -g $< -o $@\n\n')
+        f.write(f'ptxc.o: ptxc.c\n\tgcc -c -O3 -g $< -o $@\n\n')
+
+        #TODO:
+        sources = [x for x in sources if x != 'ptxc.c']
 
         for t in tests:
-            f.write(f"{t}: {t}.c ptxc.c testutils.o {' '.join(sources)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
+            f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(sources)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
 
     # copy files
     #TODO: separate testutils.c and testutils.h into a common repository
