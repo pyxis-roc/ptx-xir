@@ -176,10 +176,17 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
             f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(sources)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
 
     # copy files
-    #TODO: separate testutils.c and testutils.h into a common repository
-    for support in sources + supportfiles + ['testutils.c', 'testutils.h']:
+    for support in sources + supportfiles:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
+
+    # copy common support files
+    # TODO: make this configurable?
+    common_support_dir = dst / '..' / '..' / 'support' / 'common-c'
+    for commsupport in ['testutils.c', 'testutils.h']:
+        print(f"Copying {common_support_dir / commsupport} to {dst / commsupport}")
+        shutil.copyfile(common_support_dir / commsupport, dst / commsupport)
+
 
 def main(args):
     decls = load_declarations(args.source, args.fakecheaders)
