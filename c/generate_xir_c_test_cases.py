@@ -29,6 +29,7 @@ PROLOGUE = """
 #include <errno.h>
 #include <stdint.h>
 #include "testutils.h"
+#include "{header}"
 
 """
 
@@ -70,7 +71,7 @@ int main(int argc, char *argv[]) {{
 
 def write_ptx_harness(insn: str, decl: str, ret_type: str):
     """
-    Constructs a harness for a cuda driver program, writing it to a cuda file.
+    Constructs a harness for a C driver program.
 
     :param ptx_instruction: The name of the ptx instruction; e.g. add_s32
     :param decl: The C AST declaration
@@ -108,7 +109,7 @@ def write_ptx_harness(insn: str, decl: str, ret_type: str):
 
 
 def load_declarations(srcfile, headers):
-    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}"]) 
+    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}"])
     out = {}
 
     for d in src.ext: # should work in pycparse < 2.19
@@ -129,7 +130,8 @@ def gen_test_case(insn, fdecl):
         template = {'input_type': ptx.PTX_TO_CUDA_TYPES[ty],
                     'output_type': ptx.PTX_TO_CUDA_TYPES[ty],
                     'read_fn': f'read_{ty}_{inputargs}',
-                    'write_fn': f'write_{ty}'}
+                    'write_fn': f'write_{ty}',
+                    'header': args.header} # global!
 
         call, harness = write_ptx_harness(insn, fdecl, ret_type = template['output_type'])
 
@@ -192,12 +194,12 @@ def main(args):
     decls = load_declarations(args.source, args.fakecheaders)
     total, tests = gen_all_tests(decls)
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
-                [args.source], [])
+                [args.source, args.header], [])
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Create test cases for PTX instructions semantics compiled to C')
     p.add_argument("testcasedir", help="Directory for test cases")
-    #p.add_argument("--header", help="Header file containing declarations", default="ptxc.h")
+    p.add_argument("--header", help="Header file containing declarations", default="ptxc.h")
     p.add_argument("--source", help="Source file containing definitions", default="ptxc.c")
     p.add_argument('--fakecheaders', help="Fake C headers for pycparser", default="/usr/share/python-pycparser/fake_libc_include") # this assumes that a pycparser package is installed
     args = p.parse_args()
