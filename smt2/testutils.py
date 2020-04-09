@@ -17,6 +17,26 @@ def write_integer_test_cases(outfile, results):
             l = f"{r}\n"
             f.write(l)
 
+def read_float_test_cases(tcfile, nargs):
+    out = []
+    with open(tcfile, "r") as f:
+        for l in f:
+            ls = l.strip().split()
+
+            ls = ls[:nargs]
+
+            # note: fromhex doesn't distinguish -nan and +nan
+            out.append([float.fromhex(x) for x in ls])
+
+    return out
+
+def write_float_test_cases(outfile, results):
+    with open(outfile, "w") as f:
+        for r in results:
+            # note: we always write doubles, because that's what %a also does in printf
+            l = f"{r.hex()}\n"
+            f.write(l)
+
 #read_u8_test_cases = read_integer_test_cases
 read_u16_test_cases = read_integer_test_cases
 read_u32_test_cases = read_integer_test_cases
@@ -36,5 +56,10 @@ write_u64_test_cases = write_integer_test_cases
 write_s16_test_cases = write_integer_test_cases
 write_s32_test_cases = write_integer_test_cases
 write_s64_test_cases = write_integer_test_cases
+
+read_f32_test_cases = read_float_test_cases
+read_f64_test_cases = read_float_test_cases
+write_f32_test_cases = write_float_test_cases
+write_f64_test_cases = write_float_test_cases
 
 
