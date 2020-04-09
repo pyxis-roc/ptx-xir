@@ -168,7 +168,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
         f.write(f"all: {' '.join(tests.keys())}\n\n")
-        f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -c -g $< -o $@\n\n')
+        f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write(f'ptxc.o: ptxc.c\n\tgcc -c -O3 -g $< -o $@\n\n')
 
         #TODO:
