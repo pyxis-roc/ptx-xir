@@ -30,11 +30,21 @@ def read_float_test_cases(tcfile, nargs):
 
     return out
 
+def conform_c(x):
+    """Conform to C's %0.13a"""
+
+    if x == "0x0.0p+0":
+        return "0x0.0000000000000p+0"
+    elif x == "-0x0.0p+0":
+        return "-0x0.0000000000000p+0"
+    else:
+        return x
+
 def write_float_test_cases(outfile, results):
     with open(outfile, "w") as f:
         for r in results:
             # note: we always write doubles, because that's what %a also does in printf
-            l = f"{r.hex()}\n"
+            l = f"{conform_c(r.hex())}\n"
             f.write(l)
 
 #read_u8_test_cases = read_integer_test_cases
