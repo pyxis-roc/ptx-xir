@@ -17,6 +17,29 @@ def write_integer_test_cases(outfile, results):
             l = f"{r}\n"
             f.write(l)
 
+READERS = {'u16': int,
+           'u32': int,
+           'u64': int,
+           's16': int,
+           's32': int,
+           's64': int,
+           'b16': int,
+           'b32': int,
+           'b64': int,
+           'f32': lambda x: float.fromhex(x),
+           'f64': lambda x: float.fromhex(x)}
+
+def read_custom_test_cases(fmt, tcfile, nargs):
+    out = []
+    with open(tcfile, "r") as f:
+        for l in f:
+            ls = l.strip().split()
+
+            ls = ls[:nargs]
+            out.append([READERS[fmt](x) for x, fmt in zip(ls, fmt)])
+
+    return out
+
 def read_float_test_cases(tcfile, nargs):
     out = []
     with open(tcfile, "r") as f:
