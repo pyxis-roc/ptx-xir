@@ -52,6 +52,11 @@ read_u16_test_cases = read_integer_test_cases
 read_u32_test_cases = read_integer_test_cases
 read_u64_test_cases = read_integer_test_cases
 
+#read_u8_test_cases = read_integer_test_cases
+read_b16_test_cases = read_integer_test_cases
+read_b32_test_cases = read_integer_test_cases
+read_b64_test_cases = read_integer_test_cases
+
 #read_s8_test_cases = read_integer_test_cases
 read_s16_test_cases = read_integer_test_cases
 read_s32_test_cases = read_integer_test_cases
@@ -62,6 +67,11 @@ write_u16_test_cases = write_integer_test_cases
 write_u32_test_cases = write_integer_test_cases
 write_u64_test_cases = write_integer_test_cases
 
+#write_u8_test_cases = write_integer_test_cases
+write_b16_test_cases = write_integer_test_cases
+write_b32_test_cases = write_integer_test_cases
+write_b64_test_cases = write_integer_test_cases
+
 #write_s8_test_cases = write_integer_test_cases
 write_s16_test_cases = write_integer_test_cases
 write_s32_test_cases = write_integer_test_cases
@@ -71,5 +81,4 @@ read_f32_test_cases = read_float_test_cases
 read_f64_test_cases = read_float_test_cases
 write_f32_test_cases = write_float_test_cases
 write_f64_test_cases = write_float_test_cases
-
 
