@@ -82,3 +82,4 @@ read_f64_test_cases = read_float_test_cases
 write_f32_test_cases = write_float_test_cases
 write_f64_test_cases = write_float_test_cases
 
+write_pred_test_cases = write_u32_test_cases
