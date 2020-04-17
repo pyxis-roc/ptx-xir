@@ -168,7 +168,8 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
         f.write(f"all: {' '.join(tests.keys())}\n\n")
-        f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
+        #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
+        f.write("include Makefile.testutils\n")
         f.write(f'ptxc.o: ptxc.c\n\tgcc -c -O3 -g $< -o $@\n\n')
 
         #TODO:
@@ -185,7 +186,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
     # copy common support files
     # TODO: make this configurable?
     common_support_dir = dst / '..' / '..' / 'support' / 'common-c'
-    for commsupport in ['testutils.c', 'testutils.h']:
+    for commsupport in ['testutils.c', 'testutils.h', 'Makefile.testutils']:
         print(f"Copying {common_support_dir / commsupport} to {dst / commsupport}")
         shutil.copyfile(common_support_dir / commsupport, dst / commsupport)
 
@@ -193,6 +194,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 def main(args):
     decls = load_declarations(args.source, args.fakecheaders)
     total, tests = gen_all_tests(decls)
+    print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
                 [args.source, args.header], [])
 
