@@ -14,7 +14,7 @@ def read_integer_test_cases(tcfile, nargs):
 def write_integer_test_cases(outfile, results):
     with open(outfile, "w") as f:
         for r in results:
-            l = f"{r}\n"
+            l = f"{int(r)}\n"
             f.write(l)
 
 READERS = {'u16': int,
