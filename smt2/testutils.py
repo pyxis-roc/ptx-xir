@@ -26,6 +26,7 @@ READERS = {'u16': int,
            'b16': int,
            'b32': int,
            'b64': int,
+           'pred': int,
            'f32': lambda x: float.fromhex(x),
            'f64': lambda x: float.fromhex(x)}
 
@@ -69,6 +70,25 @@ def write_float_test_cases(outfile, results):
             # note: we always write doubles, because that's what %a also does in printf
             l = f"{conform_c(r.hex())}\n"
             f.write(l)
+
+WRITERS = {'u16': lambda x: str(int(x)),
+           'u32': lambda x: str(int(x)),
+           'u64': lambda x: str(int(x)),
+           's16': lambda x: str(int(x)),
+           's32': lambda x: str(int(x)),
+           's64': lambda x: str(int(x)),
+           'b16': lambda x: str(int(x)),
+           'b32': lambda x: str(int(x)),
+           'b64': lambda x: str(int(x)),
+           'pred': lambda x: str(int(x)),
+           'f32': lambda x: conform_c(x.hex()),
+           'f64': lambda x: conform_c(x.hex())}
+
+def write_custom_test_cases(fmt, outfile, results):
+    with open(outfile, "w") as f:
+        for r in results:
+            out = [WRITERS[f](rr) for f, rr in zip(fmt, r)]
+            f.write(" ".join(out) + "\n")
 
 #read_u8_test_cases = read_integer_test_cases
 read_u16_test_cases = read_integer_test_cases
