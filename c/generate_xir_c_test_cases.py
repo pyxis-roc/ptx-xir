@@ -19,6 +19,7 @@ from pycparser import c_ast, c_generator
 import shutil
 from gpusemtest.isa import ptx
 from gpusemtest.utils.testinfo import InstructionTest, write_all_tests
+from gpusemtest.utils.ctestutils import *
 
 PROLOGUE = """
 /* -*- mode: c++ -*- */
@@ -32,6 +33,9 @@ PROLOGUE = """
 #include "{header}"
 
 """
+
+PROLOGUE_CUSTOM_RD = "{arg_struct_defn}\n{custom_reader_defn}\n"
+PROLOGUE_CUSTOM_WR = "{out_struct_defn}\n{custom_writer_defn}\n"
 
 EPILOGUE = """
 int main(int argc, char *argv[]) {{
@@ -47,7 +51,7 @@ int main(int argc, char *argv[]) {{
    {output_type} *results;
    size_t nargs;
 
-   nargs = {read_fn}(input, &args);
+   nargs = {read_fn}({read_fn_args});
    printf("Read %ld tuples of arguments\\n", nargs);
    if(nargs == 0)
 	 return 1;
@@ -58,18 +62,20 @@ int main(int argc, char *argv[]) {{
 	 return 1;
    }}
 
+   results = ({output_type} *) memset(results, 0x65, nargs * sizeof({output_type}));
+
    int i;
    for(i = 0; i < nargs; i++)
        {test_call};
 
-   if({write_fn}(output, results, nargs))
+   if({write_fn}{write_fn_args})
 	 return 0;
 
    return 1;
 }}
 """
 
-def write_ptx_harness(insn: str, decl: str, ret_type: str):
+def write_ptx_harness(pii, insn: str, decl, ret_type: str):
     """
     Constructs a harness for a C driver program.
 
@@ -80,8 +86,7 @@ def write_ptx_harness(insn: str, decl: str, ret_type: str):
     """
     funcname = insn
 
-    # Extract the number of arguments, excluding the destination register
-    nargs = len(decl.type.args.params)
+    nargs = len(pii.arg_types)
 
     # Grab the name of the ptx inline function as well as the argument type
     ptx_funcname = decl.name
@@ -89,24 +94,34 @@ def write_ptx_harness(insn: str, decl: str, ret_type: str):
     # Now, build the driver function
 
     g = c_generator.CGenerator()
-    arglist = [g.visit(p) for p in decl.type.args.params]
+    arglist = [g.visit(p) for p in decl.type.args.params if p.name != 'cc_reg']
 
     driver_func_defn = [f"void test_{funcname}({ret_type} * result, {', '.join(arglist)}) {{"]
 
-    # for all arguments that are pointers, perform a cudaMalloc
-    device_allocs = {}
+    callargs = [d.name for d in decl.type.args.params]
 
-    callargs = [d.name if d.name not in device_allocs else device_allocs[d.name][0] for d in decl.type.args.params]
+    needs_cc = 'cc_reg' in set([a.name for a in decl.type.args.params])
+    if needs_cc:
+        driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
+        driver_func_defn.append("cc_reg.cf = 0;")
 
-    # TODO: this only supports scalar!
     driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
 
     # THIS MUST AGREE WITH EPILOGUE
-    testcall_args = ["&results[i]"] + [f"args[i*{nargs}+{i}]" for i in range(nargs)]
+    if len(pii.output_types) == 1:
+        testcall_args = ["&results[i]"]
+    else:
+        testcall_args = [f"&results[i].out{k}" for k in range(len(pii.output_types))]
+
+    if pii.is_homogeneous():
+        testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(pii.nargs)])
+    else:
+        testcall_args.extend([f"args[i].arg{i}" for i in range(pii.nargs)])
+
+    #testcall_args = ["&results[i]"] + [f"args[i*{nargs}+{i}]" for i in range(nargs)]
     call = f"test_{funcname}({', '.join(testcall_args)})"
 
     return call, "\n".join(driver_func_defn) + "\n}\n"
-
 
 def load_declarations(srcfile, headers):
     src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}"])
@@ -119,37 +134,47 @@ def load_declarations(srcfile, headers):
 
     return out
 
-def gen_test_case(insn, fdecl):
-    ty = ptx.get_insn_types(insn)
-    inputargs = len(fdecl.type.args.params)
+def gen_test_case(dpii, insn, fdecl):
+    if insn not in dpii:
+        raise NotImplementedError(f"Instruction {insn} not in PTX Instruction database")
 
+    pii = dpii[insn]
     template = {'insn': insn}
 
-    if len(ty) == 1:
-        ty = ty[0]
-        template = {'input_type': ptx.PTX_TO_CUDA_TYPES[ty],
-                    'output_type': ptx.PTX_TO_CUDA_TYPES[ty],
-                    'read_fn': f'read_{ty}_{inputargs}',
-                    'write_fn': f'write_{ty}',
-                    'header': args.header} # global!
+    template = gen_io_template(pii, insn, ptx.PTX_TO_C_TYPES,
+                               ptx.PTX_TO_SCANF_FORMAT_STRING,
+                               ptx.PTX_TO_PRINTF_FORMAT_STRING)
 
-        call, harness = write_ptx_harness(insn, fdecl, ret_type = template['output_type'])
+    call, harness = write_ptx_harness(pii, insn, fdecl, template['output_type'])
+    template['test_call'] = call
+    template['header'] = args.header # GLOBAL!
 
-        template['test_call'] = call
+    output = []
 
-        output = PROLOGUE.format(**template) + harness + EPILOGUE.format(**template)
-    else:
-        raise NotImplementedError(f"Multiple types in {insn} not supported yet")
+    output.append(PROLOGUE.format(**template))
+    if 'arg_struct_defn' in template: output.append(PROLOGUE_CUSTOM_RD.format(**template))
+    if 'out_struct_defn' in template: output.append(PROLOGUE_CUSTOM_WR.format(**template))
+
+    output.append(harness)
+    output.append(EPILOGUE.format(**template))
+
+    output = "\n".join(output)
 
     return output
 
-def gen_all_tests(fdecls):
+def gen_all_tests(dpii, fdecls):
     out = {}
     total = 0
     for f in fdecls:
+        print(f)
         total += 1
+        if f in dpii:
+            if ptx.PII_FLAG_ABSTRACT in dpii[f].flags:
+                #total += gen_abstract_tests(dpii, insn, semantics[f], out)
+                continue
+
         try:
-            test = gen_test_case(f, fdecls[f])
+            test = gen_test_case(dpii, f, fdecls[f])
             assert f not in out, f"Duplicate instruction semantics {f}"
             out[f] = InstructionTest(insn=f, testfile=f"{f}.c",
                                      contents=test,
@@ -179,7 +204,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
             f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(sources)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
 
     # copy files
-    for support in sources + supportfiles:
+    for support in ['ptxc.c'] + sources + supportfiles:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
 
@@ -192,8 +217,9 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 
 
 def main(args):
+    pii = ptx.PTXInstructionInfo.load(v=65)
     decls = load_declarations(args.source, args.fakecheaders)
-    total, tests = gen_all_tests(decls)
+    total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
                 [args.source, args.header], [])
