@@ -124,7 +124,7 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str):
     return call, "\n".join(driver_func_defn) + "\n}\n"
 
 def load_declarations(srcfile, headers):
-    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}"])
+    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}", "-DPYCPARSER"])
     out = {}
 
     for d in src.ext: # should work in pycparse < 2.19
@@ -166,7 +166,6 @@ def gen_all_tests(dpii, fdecls):
     out = {}
     total = 0
     for f in fdecls:
-        print(f)
         total += 1
         if f in dpii:
             if ptx.PII_FLAG_ABSTRACT in dpii[f].flags:
@@ -197,11 +196,10 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
         f.write("include Makefile.testutils\n")
         f.write(f'ptxc.o: ptxc.c\n\tgcc -c -O3 -g $< -o $@\n\n')
 
-        #TODO:
-        sources = [x for x in sources if x != 'ptxc.c']
+        src = [x for x in sources if x != 'ptxc.c']
 
         for t in tests:
-            f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(sources)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
+            f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(src)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
 
     # copy files
     for support in ['ptxc.c'] + sources + supportfiles:
@@ -222,7 +220,7 @@ def main(args):
     total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
-                [args.source, args.header], [])
+                [args.source], [args.header, 'ptxc_utils.h'])
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Create test cases for PTX instructions semantics compiled to C')
