@@ -20,6 +20,7 @@ import shutil
 from gpusemtest.isa import ptx
 from gpusemtest.utils.testinfo import InstructionTest, write_all_tests
 from gpusemtest.utils.ctestutils import *
+from gpusemtest.utils.metadata import write_static_metadata
 
 PROLOGUE = """
 /* -*- mode: c++ -*- */
@@ -188,6 +189,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 
     # create tests.yaml
     write_all_tests(tests, dst, write_contents=True)
+    write_static_metadata(dst, 'git', ignore_spec='ignore_spec_c.txt')
 
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
@@ -202,7 +204,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
             f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(src)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
 
     # copy files
-    for support in ['ptxc.c'] + sources + supportfiles:
+    for support in ['ptxc.c'] + sources + supportfiles + ['ignore_spec_c.txt']:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
 
