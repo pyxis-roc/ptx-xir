@@ -97,7 +97,13 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str):
     g = c_generator.CGenerator()
     arglist = [g.visit(p) for p in decl.type.args.params if p.name != 'cc_reg']
 
-    driver_func_defn = [f"void test_{funcname}({ret_type} * result, {', '.join(arglist)}) {{"]
+    if len(pii.output_types) == 1:
+        ret_args = f"{ret_type} * result"
+    else:
+        ret_args = [f"{ptx.PTX_TO_C_TYPES[a]} * result{k}" for k, a in enumerate(pii.output_types)]
+        ret_args = ", ".join(ret_args)
+
+    driver_func_defn = [f"void test_{funcname}({ret_args}, {', '.join(arglist)}) {{"]
 
     callargs = [d.name for d in decl.type.args.params]
 
@@ -106,7 +112,14 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str):
         driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
         driver_func_defn.append("cc_reg.cf = 0;")
 
-    driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
+    if len(pii.output_types) > 1:
+        # TODO
+        driver_func_defn.append(f"struct retval_{insn} result;")
+        driver_func_defn.append(f"\tresult = {ptx_funcname}({', '.join(callargs)});")
+        for k in range(len(pii.output_types)):
+            driver_func_defn.append(f"\t*result{k} = result.out{k};")
+    else:
+        driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
 
     # THIS MUST AGREE WITH EPILOGUE
     if len(pii.output_types) == 1:
@@ -196,12 +209,12 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
         f.write(f"all: {' '.join(tests.keys())}\n\n")
         #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write("include Makefile.testutils\n")
-        f.write(f'ptxc.o: ptxc.c\n\tgcc -c -O3 -g $< -o $@\n\n')
+        f.write(f'libptxc.so: ptxc.c\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
 
         src = [x for x in sources if x != 'ptxc.c']
 
         for t in tests:
-            f.write(f"{t}: {t}.c ptxc.o testutils.o {' '.join(src)}\n\tgcc -g -O3 $^ -lm -o $@\n\n")
+            f.write(f"{t}: {t}.c testutils.o {' '.join(src)}\n\tgcc -g -O3 -L. -Wl,-rpath,'$$ORIGIN' $^ -lptxc -lm -o $@\n\n")
 
     # copy files
     for support in ['ptxc.c'] + sources + supportfiles + ['ignore_spec_c.txt']:
@@ -219,6 +232,8 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 def main(args):
     pii = ptx.PTXInstructionInfo.load(v=65)
     decls = load_declarations(args.source, args.fakecheaders)
+    #decls = {'setp_q_eq_ftz_f32': decls['setp_q_eq_ftz_f32']}
+
     total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
