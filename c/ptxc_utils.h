@@ -12,6 +12,8 @@
 
 #endif
 
+#define MAX(x, y) ((x) > (y) ? (x) : (y)) /* warning this is not function call semantics! */
+
 static inline float FTZf(float x) {
   if(fpclassify(x) == FP_SUBNORMAL) {
 	return copysignf(0.0, x);
