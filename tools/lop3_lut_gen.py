@@ -14,7 +14,7 @@ def gen_lop3(n, fgen, varnames="abc"):
         if n & (1 << i):
             ones.append(i)
 
-    s = QuineMcCluskey(use_xor = True)
+    s = QuineMcCluskey(use_xor = args.use_xor)
 
     x = s.simplify(ones, num_bits = 3)
 
@@ -38,24 +38,26 @@ def gen_lop3(n, fgen, varnames="abc"):
             elif v == "1":
                 terms.append(bit+1)
 
-        minterms.append(terms)
+        minterms.append((terms, all_xor, all_xnor))
 
-    return fgen(minterms, all_xor, all_xnor, varnames)
+    return fgen(minterms, varnames)
 
-def gen_formula_py(mt, all_xor, all_xnor, varnames="ABC"):
-    xor_term = " ^ ".join([varnames[b] for b in all_xor])
-    xnor_term = " ^ ".join([varnames[b] for b in all_xnor])
-
+def gen_formula_py(mt, varnames="ABC"):
     mts = []
-    for p in mt:
+    for p, xort, xnort in mt:
+        ps = []
         if len(p):
-            ps = " & ".join([varnames[b-1] if b > 0 else f"~{varnames[-b-1]}" for b in p])
-            mts.append(ps)
+            ps.extend([varnames[b-1] if b > 0 else f"~{varnames[-b-1]}" for b in set(p)])
 
-    if xor_term: mts.append(xor_term)
-    if xnor_term: mts.append(xnor_term)
+        if len(xort):
+            ps.append("(" + " ^ ".join([varnames[b] for b in set(xort)]) + ")")
 
-    sop ="(" + ") | (".join(mts) + ")"
+        if len(xnort):
+            ps.append("~(" + " ^ ".join([varnames[b] for b in set(xnort)]) + ")")
+
+        mts.append(" & ".join(ps))
+
+    sop = "(" + ") | (".join(mts) + ")"
     return sop
 
 def generate_c_lop3_table():
@@ -66,7 +68,7 @@ def generate_c_lop3_table():
 
     for i in range(256):
         fn = gen_lop3(i, gen_formula_py)
-        s.append(f"        case {i}: return {fn};")
+        s.append(f"        case 0x{i:02x}: return {fn};")
 
     s.extend(["    }", "}\n"])
 
@@ -76,6 +78,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Generate a LOP3 function table")
     p.add_argument("language", choices=["c"])
     p.add_argument("output", nargs="?")
+    p.add_argument("-x", dest="use_xor", action="store_true")
 
     args = p.parse_args()
 
