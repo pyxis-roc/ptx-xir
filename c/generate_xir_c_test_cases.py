@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {{
 }}
 """
 
-def write_ptx_harness(pii, insn: str, decl, ret_type: str):
+def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     """
     Constructs a harness for a C driver program.
 
@@ -95,9 +95,22 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str):
     # Now, build the driver function
 
     g = c_generator.CGenerator()
-    arglist = [g.visit(p) for p in decl.type.args.params if p.name != 'cc_reg']
 
-    if len(pii.output_types) == 1:
+    if not pii.base_instruction:
+        arglist = [g.visit(p) for p in decl.type.args.params if p.name != 'cc_reg']
+        callargs = [d.name for d in decl.type.args.params]
+    else:
+        arglist = [g.visit(p) for p in decl.type.args.params[:pii.nargs] if p.name != 'cc_reg']
+        callargs = [d.name for d in decl.type.args.params[:pii.nargs]]
+
+        if base_pii is None:
+            import pdb
+            pdb.set_trace()
+
+        for p in base_pii.abstract_params:
+            callargs.append(str(pii.abstract_args[p]))
+
+    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
         ret_args = f"{ret_type} * result"
     else:
         ret_args = [f"{ptx.PTX_TO_C_TYPES[a]} * result{k}" for k, a in enumerate(pii.output_types)]
@@ -105,32 +118,35 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str):
 
     driver_func_defn = [f"void test_{funcname}({ret_args}, {', '.join(arglist)}) {{"]
 
-    callargs = [d.name for d in decl.type.args.params]
 
-    needs_cc = 'cc_reg' in set([a.name for a in decl.type.args.params])
+
+    needs_cc = 'cc_reg' in set(pii.arg_types) or 'cc_reg' in set(pii.output_types)
     if needs_cc:
         driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
         driver_func_defn.append("cc_reg.cf = 0;")
 
-    if len(pii.output_types) > 1:
+    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
+        driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
+    else:
         # TODO
         driver_func_defn.append(f"struct retval_{insn} result;")
         driver_func_defn.append(f"\tresult = {ptx_funcname}({', '.join(callargs)});")
         for k in range(len(pii.output_types)):
             driver_func_defn.append(f"\t*result{k} = result.out{k};")
-    else:
-        driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
 
     # THIS MUST AGREE WITH EPILOGUE
-    if len(pii.output_types) == 1:
+    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
         testcall_args = ["&results[i]"]
     else:
         testcall_args = [f"&results[i].out{k}" for k in range(len(pii.output_types))]
 
-    if pii.is_homogeneous():
-        testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(pii.nargs)])
+    cpii = pii.copy()
+    cpii.arg_types = [x for x in cpii.arg_types if x != 'cc_reg']
+
+    if cpii.is_homogeneous(): # TODO: handle cc_regq
+        testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(cpii.nargs)])
     else:
-        testcall_args.extend([f"args[i].arg{i}" for i in range(pii.nargs)])
+        testcall_args.extend([f"args[i].arg{i}" for i in range(cpii.nargs)])
 
     #testcall_args = ["&results[i]"] + [f"args[i*{nargs}+{i}]" for i in range(nargs)]
     call = f"test_{funcname}({', '.join(testcall_args)})"
@@ -159,7 +175,12 @@ def gen_test_case(dpii, insn, fdecl):
                                ptx.PTX_TO_SCANF_FORMAT_STRING,
                                ptx.PTX_TO_PRINTF_FORMAT_STRING)
 
-    call, harness = write_ptx_harness(pii, insn, fdecl, template['output_type'])
+    if pii.base_instruction:
+        base_pii = dpii[pii.base_instruction]
+    else:
+        base_pii = None
+
+    call, harness = write_ptx_harness(pii, insn, fdecl, template['output_type'], base_pii)
     template['test_call'] = call
     template['header'] = args.header # GLOBAL!
 
@@ -176,6 +197,22 @@ def gen_test_case(dpii, insn, fdecl):
 
     return output
 
+def gen_abstract_tests(dpii, base, abs_fdecl, out):
+    derivatives = [k for k in dpii if dpii[k].base_instruction == base]
+
+    for insn in derivatives:
+        try:
+            assert insn not in out, f"Duplicate instruction semantics {insn} ({f})"
+            test = gen_test_case(dpii, insn, abs_fdecl)
+
+            out[insn] = InstructionTest(insn=insn, testfile=f"{insn}.c",
+                                        contents=test,
+                                        compile_cmd=f'make {insn}', executable=insn)
+        except NotImplementedError as e:
+            print(f"{f} test case generation support not yet implemented ({e})")
+
+    return len(derivatives)
+
 def gen_all_tests(dpii, fdecls):
     out = {}
     total = 0
@@ -183,7 +220,7 @@ def gen_all_tests(dpii, fdecls):
         total += 1
         if f in dpii:
             if ptx.PII_FLAG_ABSTRACT in dpii[f].flags:
-                #total += gen_abstract_tests(dpii, insn, semantics[f], out)
+                total += gen_abstract_tests(dpii, f, fdecls[f], out)
                 continue
 
         try:
@@ -237,7 +274,7 @@ def main(args):
     total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
-                [args.source], [args.header, 'ptxc_utils.h'])
+                [args.source], [args.header, 'ptxc_utils.h', 'lop3_lut.h'])
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Create test cases for PTX instructions semantics compiled to C')
