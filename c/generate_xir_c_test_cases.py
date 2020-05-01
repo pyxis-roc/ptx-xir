@@ -243,10 +243,10 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
-        f.write(f"all: {' '.join(tests.keys())}\n\n")
+        f.write(f"all: libptxc.so {' '.join(tests.keys())}\n\n") #TODO: libptxc.so
         #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write("include Makefile.testutils\n")
-        f.write(f'libptxc.so: ptxc.c\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
+        f.write(f'libptxc.so: ptxc.c lop3_lut.h\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
 
         src = [x for x in sources if x != 'ptxc.c']
 
