@@ -47,17 +47,17 @@ def gen_formula_py(mt, varnames="ABC"):
     for p, xort, xnort in mt:
         ps = []
         if len(p):
-            ps.extend([varnames[b-1] if b > 0 else f"~{varnames[-b-1]}" for b in set(p)])
+            ps.extend([varnames[b-1] if b > 0 else f"~{varnames[-b-1]}" for b in sorted(set(p))])
 
         if len(xort):
-            ps.append("(" + " ^ ".join([varnames[b] for b in set(xort)]) + ")")
+            ps.append("(" + " ^ ".join([varnames[b] for b in sorted(set(xort))]) + ")")
 
         if len(xnort):
-            ps.append("~(" + " ^ ".join([varnames[b] for b in set(xnort)]) + ")")
+            ps.append("~(" + " ^ ".join([varnames[b] for b in sorted(set(xnort))]) + ")")
 
-        mts.append(" & ".join(ps))
+        mts.append(" & ".join(sorted(ps)))
 
-    sop = "(" + ") | (".join(mts) + ")"
+    sop = "(" + ") | (".join(sorted(mts)) + ")"
     return sop
 
 def generate_c_lop3_table():
