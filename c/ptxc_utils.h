@@ -10,6 +10,10 @@
 						float: SATf,			\
 						double: SATd)(X)
 
+#define SATURATE(X) _Generic((X), \
+							 float: SATf,		\
+							 double: SATd)(X)
+
 #endif
 
 #define MAX(x, y) ((x) > (y) ? (x) : (y)) /* warning this is not function call semantics! */
