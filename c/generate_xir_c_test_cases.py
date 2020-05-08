@@ -2,7 +2,7 @@
 #
 # generate_test_cases.py
 #
-# Generate test cases for native inline assembly PTX
+# Generate test cases for C translations of XIR
 #
 # Authors:
 #  - Benjamin Valpey
