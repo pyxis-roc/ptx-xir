@@ -90,6 +90,17 @@ def write_custom_test_cases(fmt, outfile, results):
             out = [WRITERS[f](rr) for f, rr in zip(fmt, r)]
             f.write(" ".join(out) + "\n")
 
+def encode_test_cases(fmt, testcases, encoder):
+    out = []
+    for t in testcases:
+        x = []
+        for v, ty in zip(t, fmt):
+            x.append(encoder(v, ty))
+
+        out.append(tuple(x))
+
+    return out
+
 #read_u8_test_cases = read_integer_test_cases
 read_u16_test_cases = read_integer_test_cases
 read_u32_test_cases = read_integer_test_cases
