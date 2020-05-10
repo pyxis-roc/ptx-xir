@@ -172,7 +172,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     cpii = pii.copy()
     cpii.arg_types = [x for x in cpii.arg_types[:nargs] if x != 'cc_reg']
 
-    fmt_str = "(" + ", ".join([f"'{x}'" for x in cpii.arg_types]) + ")"
+    fmt_str = str(tuple(cpii.arg_types))
     template['fmt_str'] = fmt_str
 
     if cpii.is_homogeneous():
