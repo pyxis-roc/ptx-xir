@@ -13,7 +13,7 @@
 (define-fun FTZ_f64 ((x Float64)) Float64
   (ite (fp.isSubnormal x) (copysign_f64 (_ +zero 11 53) x) x))
 
-; TODO: evaluate generating this from XIR
+; TODO: consider generating this from XIR?
 
 (define-fun SATURATE_f32 ((x Float32)) Float32
   (let ( (zero_f32 (_ +zero 8 24)) )
@@ -31,3 +31,13 @@
 		   zero_f64
 		   (ite (fp.lt x zero_f64) zero_f64
 				(ite (fp.gt x one_f64) one_f64 x))))))
+
+(define-fun abs_s16 ((x s16)) s16
+  (ite (bvslt x #x0000) (bvneg x) x))   ; note for -INT16_MIN, this returns INT16_MIN
+
+(define-fun abs_s32 ((x s32)) s32
+  (ite (bvslt x #x00000000) (bvneg x) x))
+
+(define-fun abs_s64 ((x s64)) s64
+  (ite (bvslt x #x0000000000000000) (bvneg x) x))
+
