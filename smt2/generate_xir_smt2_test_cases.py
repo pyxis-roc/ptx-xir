@@ -14,6 +14,7 @@ import yaml
 from gpusemtest.isa import ptx
 from gpusemtest.utils.testinfo import InstructionTest, write_all_tests
 from gpusemtest.utils.metadata import write_static_metadata
+import smt2ast
 
 PROLOGUE = """#!/usr/bin/env python3
 from smt2ast import *
@@ -31,8 +32,8 @@ def test_{insn}(testcases):
     smt2_testcases = testutils.encode_test_cases({fmt_str}, testcases, smt2_literal)
 
     scr = []
-    for t in smt2_testcases:
-        scr.append(SExprList(Symbol("get-value"), SExprList(SExprList(Symbol("execute_{insn}"), *t))))
+    for tc in smt2_testcases:
+        scr.append(SExprList(Symbol("get-value"), SExprList(SExprList(Symbol("execute_{insn}"), *tc))))
 
     return testutils_smt2.get_output(SMT2STR, scr, "z3")
 """
@@ -115,7 +116,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
 
     template = {'insn': insn}
 
-    nargs = pii.nargs - len(pii.abstract_params)
+    nargs = pii.nargs
     needs_cc = 'cc_reg' in pii.arg_types or 'cc_reg' in pii.output_types
 
     if needs_cc:
@@ -124,21 +125,35 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     else:
         th = X_TEST_HARNESS
 
-    template['smt2str'] = '"""\\\n' + "".join(gl) + "".join(fdef) + '\n"""'
-    template['iter_arg_list'] = [f"src{i}" for i in range(nargs)]
-    if nargs == 1:
-        template["arg_list"] = ["src0[0]"] # don't ask ...
-    else:
-        template["arg_list"] = list(template['iter_arg_list'])
+    # template['iter_arg_list'] = [f"src{i}" for i in range(nargs)]
+    # if nargs == 1:
+    #     template["arg_list"] = ["src0[0]"] don't ask ...
+    # else:
+    #     template["arg_list"] = list(template['iter_arg_list'])
 
     if deriv_pii is not None:
         # TODO: locate abstract argument position in instruction semantics, and place it there
         # right now, there is an assumption that all arguments occur at end of instruction
-        for p in pii.abstract_params:
-            template['arg_list'].append(str(deriv_pii.abstract_args[p]))
+        ast = smt2ast.SMT2Parser.parse("\n".join(fdef))[0]
 
-    template["iter_arg_list"] = ", ".join(template["iter_arg_list"])
-    template["arg_list"] = ", ".join(template["arg_list"])
+        # name
+        ast.v[1] = smt2ast.Symbol("execute_" + insn)
+        # args
+        ast.v[2].v = [x for x in ast.v[2].v if x.v[0].v not in pii.abstract_args]
+        # original function
+        # TODO: ordering of abstract args!
+        abstract_args_ty = list(zip(pii.abstract_args.values(), deriv_pii.arg_types[nargs:]))
+
+        orig_args = [x.v[0] for x in ast.v[2].v] + [smt2ast.smt2_literal(x, ty) for x, ty in abstract_args_ty]
+        ast.v[4] = smt2ast.SExprList(smt2ast.Symbol("execute_" + pii.base_instruction), *orig_args)
+
+        new_fn = str(ast)
+        template['smt2str'] = '"""\\\n' + "".join(gl) + "".join(fdef) + '\n\n' + new_fn + '\n"""'
+    else:
+        template['smt2str'] = '"""\\\n' + "".join(gl) + "".join(fdef) + '\n"""'
+
+    # template["iter_arg_list"] = ", ".join(template["iter_arg_list"])
+    # template["arg_list"] = ", ".join(template["arg_list"])
     template['nargs'] = nargs
 
     #TODO: needs to be in PTX Instruction Info
@@ -159,7 +174,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
 
     fmt_str = "(" + ", ".join([f"'{x}'" for x in cpii.arg_types]) + ")"
     template['fmt_str'] = fmt_str
-    
+
     if cpii.is_homogeneous():
         input_ty = cpii.arg_types[0]
         template['reader'] = f"read_{input_ty}_test_cases"
@@ -179,7 +194,7 @@ def gen_abstract_tests(dpii, base, abs_semantics, out):
     for insn in derivatives:
         try:
             assert insn not in out, f"Duplicate instruction semantics {insn} ({f})"
-            _, test = gen_test_case(dpii, insn, abs_semantics, dpii[insn])
+            _, test = gen_test_case(dpii, insn, abs_semantics, dpii[base])
             out[insn] = InstructionTest(insn, f"{insn}.py", test, '')
         except NotImplementedError as e:
             print(f"{f} test case generation support not yet implemented ({e})")
@@ -213,7 +228,7 @@ def gen_all_tests(dpii, semantics):
 def write_tests(tests, outputdir, srcpath, semantics):
     dst = pathlib.Path(outputdir)
 
-    write_all_tests(tests, dst, write_contents = True)
+    write_all_tests(tests, dst, write_contents = True, mark_executable = True)
     write_static_metadata(dst, 'git', ignore_spec='ignore_spec_smt2.txt',
                           ptx_semantics = ptx.__file__)
 
