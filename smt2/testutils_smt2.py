@@ -5,7 +5,7 @@ import subprocess
 import os
 import tempfile
 
-def get_output(script, get_value_cmds, cmd):
+def get_output(script, get_value_cmds, cmd, output_type):
     script = script + "\n(check-sat)\n"
     script = script + "\n".join([str(s) for s in get_value_cmds])
 
@@ -29,12 +29,7 @@ def get_output(script, get_value_cmds, cmd):
             for v in l.v:
                 #v.v[0]  this is the term
                 value = v.v[1]
-                if not isinstance(value, smt2ast.SExprList):
-                    out.append(value.v) # this is the value
-                elif isinstance(value.v[0], smt2ast.Symbol) and value.v[0].v == "mk-pair":
-                    out.append((value.v[1].v, value.v[2].v))
-                else:
-                    raise NotImplementedError(f"Can't handle sexpr {value}")
+                out.append(smt2ast.from_smt2_literal(value, output_type))
         return out
     elif output[0] == "unsat":
         raise ValueError(f"SMT2 solver returned unsat: " + output[1])

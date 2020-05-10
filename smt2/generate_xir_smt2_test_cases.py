@@ -35,7 +35,7 @@ def test_{insn}(testcases):
     for tc in smt2_testcases:
         scr.append(SExprList(Symbol("get-value"), SExprList(SExprList(Symbol("execute_{insn}"), *tc))))
 
-    return testutils_smt2.get_output(SMT2STR, scr, "z3")
+    return testutils_smt2.get_output(SMT2STR, scr, "z3", {ptx_output_type})
 """
 
 X_CC_TEST_HARNESS = """
@@ -163,10 +163,12 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
         # homogeneous output
         template['writer'] = f"write_{pii.output_types[0]}_test_cases"
         template['writer_args'] = "(args.output, results)"
+        template['ptx_output_type'] = repr(pii.output_types[0])
     else:
-        out_fmt_str = "(" + ", ".join([f"'{x}'" for x in pii.output_types]) + ")"
+        out_fmt_str = str(tuple(pii.output_types))
         template['writer'] = f"write_custom_test_cases"
         template['writer_args'] = f"({out_fmt_str}, args.output, results)"
+        template['ptx_output_type'] = out_fmt_str
 
     # cc_reg workaround
     cpii = pii.copy()
@@ -182,7 +184,6 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     else:
         template['reader'] = f"read_custom_test_cases"
         template['reader_args'] = f"({fmt_str}, args.input, NARGS)"
-
 
     output = PROLOGUE.format(**template) + th.format(**template) + EPILOGUE.format(**template)
 
