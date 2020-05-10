@@ -6,9 +6,9 @@ import argparse
 import sys
 import functools
 
-def gen_lop3(n, fgen, varnames="abc", use_xor = False):
+def gen_lop3(n, fgen, varnames="abc", use_xor = False, hexfn = hex):
     if n == 0:
-        return "0"
+        return hexfn(0)
 
     ones = []
     for i in range(8):
@@ -22,7 +22,7 @@ def gen_lop3(n, fgen, varnames="abc", use_xor = False):
     x = s.simplify(ones, num_bits = 3)
 
     if len(x) == 1 and x == set(['---']):
-        return hex(2**32-1)
+        return hexfn(2**32-1)
 
     #print(x)
     minterms = []
@@ -56,7 +56,7 @@ def gen_formula_smt2(mt, varnames="ABC"):
     for p, xort, xnort in mt:
         ps = []
         if len(p):
-            ps.extend([varnames[b-1] if b > 0 else f"(bvneg {varnames[-b-1]})" for b in sorted(set(p))])
+            ps.extend([varnames[b-1] if b > 0 else f"(bvnot {varnames[-b-1]})" for b in sorted(set(p))])
 
         if len(xort):
             vn = [varnames[b] for b in sorted(set(xort))]
@@ -64,7 +64,7 @@ def gen_formula_smt2(mt, varnames="ABC"):
 
         if len(xnort):
             vn = [varnames[b] for b in sorted(set(xnort))]
-            ps.append(functools.reduce(lambda x, y: f"(bvxnor {x} {y})", vn))
+            ps.append("(bvnot " + functools.reduce(lambda x, y: f"(bvxor {x} {y})", vn) + ")")
 
         mts.append(functools.reduce(lambda x, y: f"(bvand {x} {y})", ps))
 
@@ -103,21 +103,43 @@ def generate_c_lop3_table():
 
     return "\n".join(s)
 
-def generate_smt2_lop3_table():
+def generate_smt2chk_lop3_table():
     s = ["(set-logic QF_BV)",
          "(declare-fun a () (_ BitVec 32))",
          "(declare-fun b () (_ BitVec 32))",
          "(declare-fun c () (_ BitVec 32))",]
 
-    # TODO: this does not generate the functions, but rather checks for equivalence
     for i in range(256):
         fn1 = gen_lop3(i, gen_formula_smt2, use_xor=True)
         fn2 = gen_lop3(i, gen_formula_smt2, use_xor=False)
+        if i == 0:
+            fn1 = "#x" + fn1
+            fn2 = "#x" + fn2
+        elif i == 255:
+            fn1 = "#x" + fn1[2:]
+            fn2 = "#x" + fn2[2:]
 
         s.append(f"(assert (not (= {fn1} {fn2})))")
         s.append("(check-sat)")
 
     return "\n".join(s)
+
+def generate_smt2_lop3_table():
+    def recgen(p):
+        if p == len(out) - 1:
+            return f"\n    {out[p]}"
+        else:
+            return f"\n    (ite (= immLut #x{p:02x}) {out[p]}{recgen(p+1)})"
+
+    out = []
+    for i in range(256):
+        fn1 = gen_lop3(i, gen_formula_smt2, use_xor=True, hexfn=lambda x: f"#x{x:08x}")
+        out.append(fn1)
+
+    assert len(out) > 0
+    fn = f"(define-fun logical_op3 ((a b32) (b b32) (c b32) (immLut u8)) b32{recgen(0)})"
+
+    return fn
 
 def test_gen_lop3():
     # the result is non-deterministic?
@@ -129,7 +151,7 @@ def test_gen_lop3():
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Generate a LOP3 function table")
-    p.add_argument("language", choices=["c", "smt2"])
+    p.add_argument("language", choices=["c", "smt2chk", "smt2"])
     p.add_argument("output", nargs="?")
     p.add_argument("-x", dest="use_xor", action="store_true")
 
@@ -142,6 +164,15 @@ if __name__ == "__main__":
             f = sys.stdout
 
         f.write(generate_c_lop3_table())
+
+        f.close()
+    elif args.language == "smt2chk":
+        if args.output:
+            f = open(args.output, "w")
+        else:
+            f = sys.stdout
+
+        f.write(generate_smt2chk_lop3_table())
 
         f.close()
     elif args.language == "smt2":
