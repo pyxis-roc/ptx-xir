@@ -1,0 +1,55 @@
+/* -*- mode: c -*- */
+#include <stdint.h>
+
+/* placeholders, will be redefined at instantiation time */
+typedef uint16_t Ti;
+typedef uint32_t To;
+
+static inline To MULWIDE(Ti x, Ti y) {
+	To d;
+
+	d = (To) x * (To) y;
+	return d;
+}
+
+static inline To MUL24(Ti x, Ti y) {
+  To d;
+
+  /* must be an unsigned type the same size as x and y */
+  /* bitwise operations on signed types is implementation-defined */
+  uint32_t xx, yy;
+
+  xx = ((Tt) x) & 0xffffff;
+  yy = ((Tt) y) & 0xffffff;
+
+  x = xx;
+  y = yy;
+
+  d = (To) x * (To) y;
+  return d;
+}
+
+static inline Ti SATURATE(Ti x) {
+  if(isnan(x)) return 0.0;
+
+  if(x < 0.0)
+	return 0.0;
+  else if (x > 1.0)
+	return 1.0;
+  else
+	return x;
+}
+
+static inline Ti MAX(Ti x, Ti y) {
+  if(x < y)
+	return y;
+  else
+	return x;
+}
+
+static inline Ti MIN(Ti x, Ti y) {
+  if(x < y)
+	return x;
+  else
+	return y;
+}

@@ -4,8 +4,10 @@ import argparse
 import pycparser
 from pycparser import c_ast, c_generator, c_parser
 import tempfile
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import copy
+
+CGeneric = namedtuple('CGeneric', 'name args control assoc_list')
 
 class Instantiate(c_ast.NodeVisitor):
     def visit_IdentifierType(self, node):
@@ -81,6 +83,7 @@ def instantiate(tmplname, funcname, tvals, ctempl, tvars, headers):
     return out, cg.visit(tmpl)
 
 def generate_generics(generics, instantiations):
+    out = []
     for g in generics:
         tmplname, args, tvar_typename, control = g
         args = ', '.join(args.split(":"))
@@ -93,10 +96,9 @@ def generate_generics(generics, instantiations):
             tval_typename = tvals[tvar_typename][len("typedef "):-len(tvar_typename)-1] # yuck...
             assoc_list.append((tval_typename.strip(), funcname))
 
-        assoc_list = ", ".join([f"({t}): {v}" for (t, v) in assoc_list])
-        print(f"#define {tmplname}({args}) _Generic(({control}, {assoc_list})({args})")
+        yield CGeneric(name=tmplname, args=args, control = control, assoc_list = assoc_list)
 
-def process_script(script, fakecheaders = '/usr/share/python-pycparser/fake_libc_include'):
+def process_script(script, output, fakecheaders = '/usr/share/python-pycparser/fake_libc_include'):
     ctempl = None
     headers = []
     instantiations = {}
@@ -131,14 +133,21 @@ def process_script(script, fakecheaders = '/usr/share/python-pycparser/fake_libc
 
     tvars, ctempl = load_template(ctempl, fakecheaders)
     headers = "\n".join(headers) + "\n"
-    print("#pragma once")
-    print(headers)
+
+    print("#pragma once", file=output)
+    print(headers, file=output)
     for tmplfunc in instantiations.keys():
         for funcname, tvals in instantiations[tmplfunc]:
             _, code = instantiate(tmplfunc, funcname, tvals, ctempl, tvars, headers)
-            print(code)
+            print(code, file=output)
 
-    generate_generics(generics, instantiations)
+    print("#if __STDC_VERSION__ >= 201101L", file=output)
+    for g in generate_generics(generics, instantiations):
+        d = f"#define {g.name}({g.args}) _Generic("
+        print(f"{d}{g.control}, " + "\\", file=output)
+        print(", \\\n".join([" "*len(d) + f"{t}: {f}" for t, f in g.assoc_list]), end='', file=output)
+        print(f")({g.args})\n", file=output)
+    print("#endif", file=output)
 
 if __name__ == "__main__":
     import sys
@@ -147,10 +156,16 @@ if __name__ == "__main__":
         p = argparse.ArgumentParser(description="Produce `generic' C code from templates")
 
         p.add_argument("script", help="C template file using typedefs as templates")
+        p.add_argument("output", nargs="?", help="Output file")
         p.add_argument('--fakecheaders', help="Fake C headers for pycparser", default="/usr/share/python-pycparser/fake_libc_include") # this assumes that a pycparser package is installed
 
         args = p.parse_args()
-        process_script(args.script)
+        if args.output:
+            f = open(args.output, "w")
+        else:
+            f = sys.stdout
+
+        process_script(args.script, f)
     else:
         p = argparse.ArgumentParser(description="Produce `generic' C code from templates")
 

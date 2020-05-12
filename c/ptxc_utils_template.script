@@ -7,6 +7,63 @@ tvar_include <stdint.h>
 # then specify instantiations, note template variables are separated by :
 inst MULWIDE MULWIDE_u16_u32 Ti=uint16_t:To=uint32_t
 inst MULWIDE MULWIDE_u32_u64 Ti=uint32_t:To=uint64_t
+
+inst MULWIDE MULWIDE_s16_s32 Ti=int16_t:To=int32_t
+inst MULWIDE MULWIDE_s32_s64 Ti=int32_t:To=int64_t
+
 # create a generic definition without a default
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
 generic MULWIDE X:Y Ti X
+
+inst MUL24 MUL24_u32_u64 Ti=uint32_t:To=uint64_t
+inst MUL24 MUL24_s32_s64 Ti=int32_t:To=int64_t
+
+# create a generic definition without a default
+# name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
+generic MUL24 X:Y Ti X
+
+
+# then specify instantiations, note template variables are separated by :
+inst SATURATE SAT_f32 Ti=float
+inst SATURATE SAT_f64 Ti=double
+# create a generic definition without a default
+# name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
+generic SATURATE X Ti X
+
+inst MAX MAX_f32 Ti=float
+inst MAX MAX_f64 Ti=double
+
+inst MAX MAX_s16 Ti=int16_t
+inst MAX MAX_s32 Ti=int32_t
+inst MAX MAX_s64 Ti=int64_t
+
+inst MAX MAX_u16 Ti=uint16_t
+inst MAX MAX_u32 Ti=uint32_t
+inst MAX MAX_u64 Ti=uint64_t
+
+inst MAX MAX_b32 Ti=uint32_t
+inst MAX MAX_b64 Ti=uint64_t
+inst MAX MAX_b16 Ti=uint16_t
+
+# create a generic definition without a default
+# name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
+generic MAX X:Y Ti X
+
+inst MIN MIN_f32 Ti=float
+inst MIN MIN_f64 Ti=double
+
+inst MIN MIN_s16 Ti=int16_t
+inst MIN MIN_s32 Ti=int32_t
+inst MIN MIN_s64 Ti=int64_t
+
+inst MIN MIN_u16 Ti=uint16_t
+inst MIN MIN_u32 Ti=uint32_t
+inst MIN MIN_u64 Ti=uint64_t
+
+inst MIN MIN_b32 Ti=uint32_t
+inst MIN MIN_b64 Ti=uint64_t
+inst MIN MIN_b16 Ti=uint16_t
+
+# create a generic definition without a default
+# name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
+generic MIN X:Y Ti X
