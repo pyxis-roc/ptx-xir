@@ -1,0 +1,12 @@
+# this is a comment
+# begin with the C file containing the templates
+# TODO: allow the ability to specify custom include directories
+template ptxc_utils_template.c
+# then specify includes for template vars
+tvar_include <stdint.h>
+# then specify instantiations, note template variables are separated by :
+inst MULWIDE MULWIDE_u16_u32 Ti=uint16_t:To=uint32_t
+inst MULWIDE MULWIDE_u32_u64 Ti=uint32_t:To=uint64_t
+# create a generic definition without a default
+# name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
+generic MULWIDE X:Y Ti X
