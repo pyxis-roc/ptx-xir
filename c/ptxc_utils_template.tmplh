@@ -19,8 +19,8 @@ static inline To MUL24(Ti x, Ti y) {
   /* bitwise operations on signed types is implementation-defined */
   uint32_t xx, yy;
 
-  xx = ((Tt) x) & 0xffffff;
-  yy = ((Tt) y) & 0xffffff;
+  xx = ((uint32_t) x) & 0xffffff;
+  yy = ((uint32_t) y) & 0xffffff;
 
   x = xx;
   y = yy;

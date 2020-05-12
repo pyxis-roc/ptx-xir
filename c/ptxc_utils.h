@@ -14,9 +14,11 @@
 							 float: SATf,		\
 							 double: SATd)(X)
 
-#endif
+#define FMA(X, Y, Z) _Generic((X),				\
+							  float: fmaf,		\
+							  double: fma)(X, Y, Z)
 
-#define MAX(x, y) ((x) > (y) ? (x) : (y)) /* warning this is not function call semantics! */
+#endif
 
 static inline float FTZf(float x) {
   if(fpclassify(x) == FP_SUBNORMAL) {
@@ -34,26 +36,6 @@ static inline float FTZd(double x) {
   return x;
 }
 
-static inline float SATf(float x) {
-  if(isnan(x)) return 0.0;
-
-  if(x < 0.0)
-	return 0.0;
-  else if (x > 1.0)
-	return 1.0;
-  else
-	return x;
-}
-
-static inline double SATd(double x) {
-  if(isnan(x)) return 0.0;
-
-  if(x < 0.0)
-	return 0.0;
-  else if (x > 1.0)
-	return 1.0;
-  else
-	return x;
-}
+#include "ptxc_utils_template.h"
 
 /* note: add_sat_s32 is not a separate operator because of overflow */

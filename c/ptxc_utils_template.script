@@ -1,7 +1,7 @@
 # this is a comment
 # begin with the C file containing the templates
 # TODO: allow the ability to specify custom include directories
-template ptxc_utils_template.c
+template ptxc_utils_template.tmplh
 # then specify includes for template vars
 tvar_include <stdint.h>
 # then specify instantiations, note template variables are separated by :
@@ -41,10 +41,6 @@ inst MAX MAX_u16 Ti=uint16_t
 inst MAX MAX_u32 Ti=uint32_t
 inst MAX MAX_u64 Ti=uint64_t
 
-inst MAX MAX_b32 Ti=uint32_t
-inst MAX MAX_b64 Ti=uint64_t
-inst MAX MAX_b16 Ti=uint16_t
-
 # create a generic definition without a default
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
 generic MAX X:Y Ti X
@@ -59,10 +55,6 @@ inst MIN MIN_s64 Ti=int64_t
 inst MIN MIN_u16 Ti=uint16_t
 inst MIN MIN_u32 Ti=uint32_t
 inst MIN MIN_u64 Ti=uint64_t
-
-inst MIN MIN_b32 Ti=uint32_t
-inst MIN MIN_b64 Ti=uint64_t
-inst MIN MIN_b16 Ti=uint16_t
 
 # create a generic definition without a default
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
