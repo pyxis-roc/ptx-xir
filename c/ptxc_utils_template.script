@@ -59,3 +59,32 @@ inst MIN MIN_u64 Ti=uint64_t
 # create a generic definition without a default
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
 generic MIN X:Y Ti X
+
+
+inst ADD_ROUND ADD_ROUND_f32 Ti=float
+inst ADD_ROUND ADD_ROUND_f64 Ti=double
+generic ADD_ROUND X:Y:M Ti X
+
+inst SUB_ROUND SUB_ROUND_f32 Ti=float
+inst SUB_ROUND SUB_ROUND_f64 Ti=double
+generic SUB_ROUND X:Y:M Ti X
+
+inst MUL_ROUND MUL_ROUND_f32 Ti=float
+inst MUL_ROUND MUL_ROUND_f64 Ti=double
+generic MUL_ROUND X:Y:M Ti X
+
+inst DIV_ROUND DIV_ROUND_f32 Ti=float
+inst DIV_ROUND DIV_ROUND_f64 Ti=double
+generic DIV_ROUND X:Y:M Ti X
+
+inst FMA_ROUND FMA_ROUND_f32 Ti=float
+inst FMA_ROUND FMA_ROUND_f64 Ti=double
+generic FMA_ROUND X:Y:Z:M Ti X
+
+inst RCP_ROUND RCP_ROUND_f32 Ti=float
+inst RCP_ROUND RCP_ROUND_f64 Ti=double
+generic RCP_ROUND X:M Ti X
+
+inst SQRT_ROUND SQRT_ROUND_f32 Ti=float
+inst SQRT_ROUND SQRT_ROUND_f64 Ti=double
+generic SQRT_ROUND X:M Ti X

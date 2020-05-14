@@ -1,5 +1,6 @@
 /* -*- mode: c -*- */
 #include <stdint.h>
+/* can't include fenv.h here */
 
 /* placeholders, will be redefined at instantiation time */
 typedef uint16_t Ti;
@@ -53,3 +54,62 @@ static inline Ti MIN(Ti x, Ti y) {
   else
 	return y;
 }
+
+static inline Ti SUB_ROUND(Ti x, Ti y, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = x - y;
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti MUL_ROUND(Ti x, Ti y, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = x * y;
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti ADD_ROUND(Ti x, Ti y, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = x + y;
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti DIV_ROUND(Ti x, Ti y, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = x / y;
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti FMA_ROUND(Ti x, Ti y, Ti z, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = FMA(x, y, z); // double indirection!
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti RCP_ROUND(Ti x, int mode) {
+  Ti t;
+  fesetround(mode); //TODO: check for errors
+  t = 1.0 / x;
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+static inline Ti SQRT_ROUND(Ti x, int mode) {
+  Ti t;
+  /* not sure sqrt() respects rounding mode? */
+  fesetround(mode); //TODO: check for errors
+  t = SQRT(x); // double indirection!
+  fesetround(FE_TONEAREST); // assume rn is default
+  return t;
+}
+
+

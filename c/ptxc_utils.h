@@ -1,5 +1,6 @@
 #pragma once
 #include <math.h>
+#include <fenv.h>
 
 #ifndef PYCPARSER /* pycparser doesn't handle _Generic */
 #define FTZ(X) _Generic((X), \
@@ -10,15 +11,17 @@
 						float: SATf,			\
 						double: SATd)(X)
 
-#define SATURATE(X) _Generic((X), \
-							 float: SATf,		\
-							 double: SATd)(X)
-
 #define FMA(X, Y, Z) _Generic((X),				\
 							  float: fmaf,		\
 							  double: fma)(X, Y, Z)
 
+#define SQRT(X) _Generic((X),				\
+						 float: sqrtf,		\
+						 double: sqrt)(X)
+
 #endif
+
+#define RCP(X) (1.0 / (X))
 
 static inline float FTZf(float x) {
   if(fpclassify(x) == FP_SUBNORMAL) {
@@ -38,4 +41,27 @@ static inline float FTZd(double x) {
 
 #include "ptxc_utils_template.h"
 
-/* note: add_sat_s32 is not a separate operator because of overflow */
+int32_t ADD_SATURATE_s32(int32_t x, int32_t y) {
+  /* see Dietz et al., ICSE 2012 */
+
+  if(x > 0 && y > 0 && x > INT32_MAX - y)
+	return INT32_MAX;
+
+  if(x < 0 && y < 0 && x < INT32_MIN - y)
+	return INT32_MIN;
+
+  return x + y;
+}
+
+int32_t SUB_SATURATE_s32(int32_t x, int32_t y) {
+  if(x < 0 && y > 0 && x < INT32_MIN + y) {
+	return INT32_MIN;
+  }
+
+  if(x > 0 && y < 0 && x > INT32_MAX + y) {
+	return INT32_MAX;
+  }
+
+  // both same sign or no overflow detected
+  return x - y;
+}
