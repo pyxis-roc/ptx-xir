@@ -112,4 +112,19 @@ static inline Ti SQRT_ROUND(Ti x, int mode) {
   return t;
 }
 
+static inline void extractAndZeroExt_4(uint32_t src, Ti *dst) {
+  for(int i = 0; i < 4; i++) {
+	// unsigned 8 -> anything will always be zero extension
+	dst[i] = (Ti) ((uint8_t) (src & 0xff));
+	src >>= 8;
+  }
+}
+
+static inline void extractAndSignExt_4(uint32_t src, Ti *dst) {
+  for(int i = 0; i < 4; i++) {
+	// signed 8 -> anything will always be sign extension
+	dst[i] = (Ti) ((int8_t) (src & 0xff));
+	src >>= 8;
+  }
+}
 

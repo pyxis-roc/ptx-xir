@@ -88,3 +88,7 @@ generic RCP_ROUND X:M Ti X
 inst SQRT_ROUND SQRT_ROUND_f32 Ti=float
 inst SQRT_ROUND SQRT_ROUND_f64 Ti=double
 generic SQRT_ROUND X:M Ti X
+
+inst extractAndZeroExt_4 extractAndZeroExt_4_u32  Ti=uint32_t*
+inst extractAndZeroExt_4 extractAndZeroExt_4_s32  Ti=int32_t*
+generic extractAndZeroExt_4 X:Y Ti Y

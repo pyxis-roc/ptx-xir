@@ -14,8 +14,13 @@ class Instantiate(c_ast.NodeVisitor):
         if len(node.names) == 1:
             v = node.names[0]
             if v in self._dtvast:
-                #print(v, self._dtvast[v])
-                node.names = self._dtvast[v].type.names
+                vty = self._dtvast[v]
+                #TODO: handle this correctly. Ti => uint32_t *
+                # Right now, the template must use * since Ti => uint32_t
+                if isinstance(vty, c_ast.PtrDecl):
+                    vty = vty.type
+
+                node.names = vty.type.names
 
     def visit_FuncDef(self, node):
         # there is only one Funcdef
