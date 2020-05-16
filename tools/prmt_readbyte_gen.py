@@ -40,3 +40,46 @@ def rc16(c):
     s = (c * 2) & 3
     for i in range(4):
         yield s + (i & 1)
+
+MODES = {'f4e': f4e, 'b4e': b4e, 'rc8': rc8, 'ecl': ecl, 'ecr': ecr, 'rc16': rc16}
+
+def get_modes():
+    for m in MODES:
+        f = MODES[m]
+        for c in range(4):
+            pos = list(f(c))
+            yield (m, c, pos)
+
+def generate_c():
+    print("#pragma once")
+    print("#include <stdint.h>")
+
+    lastmode = None
+    for mode, control, positions in get_modes():
+        if lastmode != mode:
+            print(f"static inline uint8_t ReadByte_{mode}(uint8_t control, uint64_t value, uint8_t pos) {{")
+            print("uint8_t byte = 0;")
+            lastmode = mode
+
+        print(f"  if(control == {control}) {{")
+        print("     switch(pos) {")
+        for i, x in enumerate(positions):
+             print(f"       case {i}: byte = {x}; break;")
+        print("     }")
+        print("   }")
+
+        if control == 3:
+            print("  return (value >> (byte * 8)) & 0xff;")
+            print("}")
+
+if __name__ == "__main__":
+    import argparse
+    p = argparse.ArgumentParser(description="Generate the ReadByte functions for prmt")
+    p.add_argument("language", choices=["c"])
+
+    args = p.parse_args()
+
+    if args.language == 'c':
+        generate_c()
+    else:
+        raise NotImplementedError(f"Unknown language {args.language}")
