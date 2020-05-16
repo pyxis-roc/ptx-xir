@@ -274,7 +274,7 @@ def main(args):
     total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
-                [args.source], [args.header, 'ptxc_utils.h', 'lop3_lut.h', 'ptxc_utils_template.h'])
+                [args.source], [args.header, 'ptxc_utils.h', 'lop3_lut.h', 'ptxc_utils_template.h', 'readbyte_prmt.h'])
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Create test cases for PTX instructions semantics compiled to C')
