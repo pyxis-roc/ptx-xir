@@ -1,10 +1,13 @@
 /* -*- mode: c -*- */
 #include <stdint.h>
+#include "128types.h"
+
 /* can't include fenv.h here */
 
 /* placeholders, will be redefined at instantiation time */
 typedef uint16_t Ti;
 typedef uint32_t To;
+
 
 static inline To MULWIDE(Ti x, Ti y) {
 	To d;

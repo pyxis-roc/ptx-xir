@@ -4,12 +4,16 @@
 template ptxc_utils_template.tmplh
 # then specify includes for template vars
 tvar_include <stdint.h>
+tvar_include "128types.h"
+
 # then specify instantiations, note template variables are separated by :
 inst MULWIDE MULWIDE_u16_u32 Ti=uint16_t:To=uint32_t
 inst MULWIDE MULWIDE_u32_u64 Ti=uint32_t:To=uint64_t
+inst MULWIDE MULWIDE_u64_u128 Ti=uint64_t:To=my_uint128_t
 
 inst MULWIDE MULWIDE_s16_s32 Ti=int16_t:To=int32_t
 inst MULWIDE MULWIDE_s32_s64 Ti=int32_t:To=int64_t
+inst MULWIDE MULWIDE_s64_s128 Ti=int64_t:To=my_int128_t
 
 # create a generic definition without a default
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression

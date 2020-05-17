@@ -6,6 +6,7 @@ from pycparser import c_ast, c_generator, c_parser
 import tempfile
 from collections import OrderedDict, namedtuple
 import copy
+import os
 
 CGeneric = namedtuple('CGeneric', 'name args control assoc_list')
 
@@ -60,7 +61,7 @@ def get_typedefs_for_tvars(varvalues):
 
     return OrderedDict(o)
 
-def instantiate(tmplname, funcname, tvals, ctempl, tvars, headers):
+def instantiate(tmplname, funcname, tvals, ctempl, tvars, headers, header_dirs = []):
     assert tmplname in ctempl, f"Unknown template function {tmplname}"
 
     # parse template variable instantiations
@@ -70,7 +71,10 @@ def instantiate(tmplname, funcname, tvals, ctempl, tvars, headers):
         f.write(ccode)
         f.flush()
 
-        tint = pycparser.parse_file(f.name, use_cpp=True, cpp_args=["-I{headers}"])
+        if len(header_dirs):
+            header_dirs = [f"-I{h}" for h in header_dirs]
+
+        tint = pycparser.parse_file(f.name, use_cpp=True, cpp_args=header_dirs)
 
     # extract ASTs
     out = {}
@@ -136,6 +140,7 @@ def process_script(script, output, fakecheaders = '/usr/share/python-pycparser/f
 
                 generics.append((gen[1], gen[2], gen[3], gen[4]))
 
+    header_dirs = [os.path.join(os.getcwd(), os.path.dirname(script))]
     tvars, ctempl = load_template(ctempl, fakecheaders)
     headers = "\n".join(headers) + "\n"
 
@@ -143,7 +148,7 @@ def process_script(script, output, fakecheaders = '/usr/share/python-pycparser/f
     print(headers, file=output)
     for tmplfunc in instantiations.keys():
         for funcname, tvals in instantiations[tmplfunc]:
-            _, code = instantiate(tmplfunc, funcname, tvals, ctempl, tvars, headers)
+            _, code = instantiate(tmplfunc, funcname, tvals, ctempl, tvars, headers, header_dirs)
             print(code, file=output)
 
     print("#if __STDC_VERSION__ >= 201101L", file=output)
