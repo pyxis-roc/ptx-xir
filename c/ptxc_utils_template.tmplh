@@ -127,4 +127,3 @@ static inline void extractAndSignExt_4(uint32_t src, Ti *dst) {
 	src >>= 8;
   }
 }
-
