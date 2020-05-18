@@ -130,3 +130,19 @@ static inline void extractAndSignExt_4(uint32_t src, Ti *dst) {
 	src >>= 8;
   }
 }
+
+static inline void extractAndZeroExt_2(uint32_t src, Ti *dst) {
+  for(int i = 0; i < 2; i++) {
+	// unsigned 8 -> anything will always be zero extension
+	dst[i] = (Ti) ((uint16_t) (src & 0xffff));
+	src >>= 16;
+  }
+}
+
+static inline void extractAndSignExt_2(uint32_t src, Ti *dst) {
+  for(int i = 0; i < 2; i++) {
+	// signed 8 -> anything will always be sign extension
+	dst[i] = (Ti) ((int16_t) (src & 0xffff));
+	src >>= 16;
+  }
+}

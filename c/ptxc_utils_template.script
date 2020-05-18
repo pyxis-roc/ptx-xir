@@ -97,6 +97,14 @@ inst extractAndZeroExt_4 extractAndZeroExt_4_u32  Ti=uint32_t*
 inst extractAndZeroExt_4 extractAndZeroExt_4_s32  Ti=int32_t*
 generic extractAndZeroExt_4 X:Y Ti Y
 
+inst extractAndZeroExt_2 extractAndZeroExt_2_u32  Ti=uint32_t*
+inst extractAndZeroExt_2 extractAndZeroExt_2_s32  Ti=int32_t*
+generic extractAndZeroExt_2 X:Y Ti Y
+
 inst extractAndSignExt_4 extractAndSignExt_4_u32  Ti=uint32_t*
 inst extractAndSignExt_4 extractAndSignExt_4_s32  Ti=int32_t*
 generic extractAndSignExt_4 X:Y Ti Y
+
+inst extractAndSignExt_2 extractAndSignExt_2_u32  Ti=uint32_t*
+inst extractAndSignExt_2 extractAndSignExt_2_s32  Ti=int32_t*
+generic extractAndSignExt_2 X:Y Ti Y
