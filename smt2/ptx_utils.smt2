@@ -57,7 +57,17 @@
 			  INT32_MAX
 			  (bvsub x y)))))
 
-										; machine-specific
+
+(define-fun MUL24_u32 ((x u32) (y u32)) u64
+  (let ((x64 ((_ zero_extend 40) ((_ extract 23 0) x)))
+		(y64 ((_ zero_extend 40) ((_ extract 23 0) y))))
+	(bvmul x64 y64)))
+
+(define-fun MUL24_s32 ((x s32) (y s32)) s64
+  (let ((x64 ((_ sign_extend 40) ((_ extract 23 0) x)))
+		(y64 ((_ sign_extend 40) ((_ extract 23 0) y))))
+	(bvmul x64 y64)))
+; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
 ; these need to be implemented
 
