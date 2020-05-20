@@ -72,14 +72,43 @@ def generate_c():
             print("  return (value >> (byte * 8)) & 0xff;")
             print("}")
 
+def generate_smt2():
+    def itechain(values, offset):
+        if len(values) == 1:
+            return "\n" + " "*(offset+4) + f"{values[0][1]}"
+
+        return "\n" + " "*offset + f"(ite {values[0][0]} {values[0][1]}{itechain(values[1:], offset)})"
+
+    lastmode = None
+    for mode, control, positions in get_modes():
+        if lastmode != mode:
+            #TODO: this uses u32 for control and pos, but should really be u8?
+            print(f"(define-fun ReadByte_{mode}((control u32) (value u64) (pos u32)) u32", end='')
+            lastmode = mode
+            control_ite = []
+
+        values = []
+        for i, x in enumerate(positions):
+            shiftpos = x*8
+            shiftpos_end = shiftpos + 8 - 1
+            ext = f"((_ zero_extend 24) ((_ extract {shiftpos_end} {shiftpos}) value))"
+            values.append((f"(= pos #x{i:08x})", ext))
+
+        control_ite.append((f"(= control #x{control:08x})", itechain(values, 8)))
+
+        if control == 3:
+            print(itechain(control_ite, 4) + ")")
+
 if __name__ == "__main__":
     import argparse
     p = argparse.ArgumentParser(description="Generate the ReadByte functions for prmt")
-    p.add_argument("language", choices=["c"])
+    p.add_argument("language", choices=["c", "smt2"])
 
     args = p.parse_args()
 
     if args.language == 'c':
         generate_c()
+    elif args.language == 'smt2':
+        generate_smt2()
     else:
         raise NotImplementedError(f"Unknown language {args.language}")
