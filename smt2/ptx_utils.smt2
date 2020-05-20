@@ -56,3 +56,23 @@
 		 (ite (and (bvsgt x INT32_ZERO) (bvslt y INT32_ZERO) (bvsgt x (bvadd INT32_MAX y)))
 			  INT32_MAX
 			  (bvsub x y)))))
+
+										; machine-specific
+;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
+; these need to be implemented
+
+(define-fun log2_f32 ((x f32)) f32 x)
+(define-fun log2_f64 ((x f64)) f64 x)
+(define-fun sqrt_round_f32 ((m RoundingMode) (x f32)) f32 x)
+(define-fun sqrt_round_f64 ((m RoundingMode) (x f64)) f64 x)
+(define-fun sqrt_f32 ((x f32)) f32 x)
+(define-fun sqrt_f64 ((x f64)) f64 x)
+
+(define-fun sin_f32 ((x f32)) f32 x)
+(define-fun sin_f64 ((x f64)) f64 x)
+
+(define-fun cos_f32 ((x f32)) f32 x)
+(define-fun cos_f64 ((x f64)) f64 x)
+
+(define-fun pow_f32 ((x f32) (y f32)) f32 x)
+(define-fun pow_f64 ((x f64) (y f32)) f64 x)
