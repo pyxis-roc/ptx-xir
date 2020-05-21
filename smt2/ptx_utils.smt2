@@ -98,6 +98,37 @@
 		(yw ((_ sign_extend 64) y)))
 	(bvmul xw yw)))
 
+(define-fun na_extractAndZeroExt_4 ((x b32) (pos u8)) b32
+  ((_ zero_extend 24)
+   (ite (= pos #x00)
+		((_ extract 7 0) x)
+		 (ite (= pos #x01)
+			  ((_ extract 15 8) x)
+			  (ite (= pos #x02)
+				   ((_ extract 23 16) x)
+				   ((_ extract 31 24) x))))))
+
+(define-fun na_extractAndSignExt_4 ((x b32) (pos u8)) b32
+  ((_ sign_extend 24)
+   (ite (= pos #x00)
+		((_ extract 7 0) x)
+		 (ite (= pos #x01)
+			  ((_ extract 15 8) x)
+			  (ite (= pos #x02)
+				   ((_ extract 23 16) x)
+				   ((_ extract 31 24) x))))))
+
+(define-fun na_extractAndZeroExt_2 ((x b32) (pos u8)) b32
+  ((_ zero_extend 16)
+   (ite (= pos #x00)
+		((_ extract 15 0) x)
+		((_ extract 31 16) x))))
+
+(define-fun na_extractAndSignExt_2 ((x b32) (pos u8)) b32
+  ((_ sign_extend 16)
+   (ite (= pos #x00)
+		((_ extract 15 0) x)
+		((_ extract 31 16) x))))
 
 ; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
