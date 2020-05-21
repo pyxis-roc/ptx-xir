@@ -67,6 +67,38 @@
   (let ((x64 ((_ sign_extend 40) ((_ extract 23 0) x)))
 		(y64 ((_ sign_extend 40) ((_ extract 23 0) y))))
 	(bvmul x64 y64)))
+
+(define-fun MULWIDE_u16 ((x u16) (y u16)) u32
+  (let ((xw ((_ zero_extend 16) x))
+		(yw ((_ zero_extend 16) y)))
+	(bvmul xw yw)))
+
+(define-fun MULWIDE_u32 ((x u32) (y u32)) u64
+  (let ((xw ((_ zero_extend 32) x))
+		(yw ((_ zero_extend 32) y)))
+	(bvmul xw yw)))
+
+(define-fun MULWIDE_u64 ((x u64) (y u64)) u128
+  (let ((xw ((_ zero_extend 64) x))
+		(yw ((_ zero_extend 64) y)))
+	(bvmul xw yw)))
+
+(define-fun MULWIDE_s16 ((x s16) (y s16)) s32
+  (let ((xw ((_ sign_extend 16) x))
+		(yw ((_ sign_extend 16) y)))
+	(bvmul xw yw)))
+
+(define-fun MULWIDE_s32 ((x s32) (y s32)) s64
+  (let ((xw ((_ sign_extend 32) x))
+		(yw ((_ sign_extend 32) y)))
+	(bvmul xw yw)))
+
+(define-fun MULWIDE_s64 ((x s64) (y s64)) s128
+  (let ((xw ((_ sign_extend 64) x))
+		(yw ((_ sign_extend 64) y)))
+	(bvmul xw yw)))
+
+
 ; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
 ; these need to be implemented
