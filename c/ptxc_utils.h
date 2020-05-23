@@ -19,6 +19,11 @@
 						 float: sqrtf,		\
 						 double: sqrt)(X)
 
+#define extract_24(X) _Generic((X),								\
+							   uint32_t: extract_24_unsigned,	\
+							   int32_t: extract_24_signed)(X)
+
+
 #endif
 
 #define RCP(X) (1.0 / (X))
@@ -37,6 +42,18 @@ static inline float FTZd(double x) {
   }
 
   return x;
+}
+
+static inline uint32_t extract_24_unsigned(uint32_t x) {
+  return x & 0xffffff;
+}
+
+static inline uint32_t extract_24_signed(int32_t x) {
+  uint32_t xx = x;
+  xx = x & 0xffffff;
+  if(xx & 0x800000) xx |= 0xff000000;
+
+  return xx;
 }
 
 #include "ptxc_utils_template.h"
