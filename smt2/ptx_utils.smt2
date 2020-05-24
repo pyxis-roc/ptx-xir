@@ -130,6 +130,16 @@
 		((_ extract 15 0) x)
 		((_ extract 31 16) x))))
 
+(define-fun ReadByte ((control u32) (value u64) (pos u32)) u32 ; pos is not used for ReadByte
+	(let ( (bitpos (bvshl ((_ zero_extend 32) (bvand control #x00000007)) #x0000000000000003)) )
+	  (let ( (byte (bvand (bvlshr value bitpos) #x00000000000000ff)) )
+		((_ zero_extend 24)
+		 (ite (= (bvand control #x00000008) #x00000008)
+			  ((_ repeat 8) ((_ extract 7 7) byte))
+			  ((_ extract 7 0) byte)
+			  )
+		 ))))
+
 ; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
 ; these need to be implemented
