@@ -246,7 +246,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
         f.write(f"all: libptxc.so {' '.join(tests.keys())}\n\n") #TODO: libptxc.so
         #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write("include Makefile.testutils\n")
-        f.write(f'libptxc.so: ptxc.c lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
+        f.write(f'libptxc.so: {sources[0]} lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
 
         src = [x for x in sources if x != 'ptxc.c']
 
@@ -254,7 +254,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
             f.write(f"{t}: {t}.c testutils.o {' '.join(src)}\n\tgcc -g -O3 -L. -Wl,-rpath,'$$ORIGIN' $^ -lptxc -lm -o $@\n\n")
 
     # copy files
-    for support in ['ptxc.c'] + sources + supportfiles + ['ignore_spec_c.txt']:
+    for support in sources + supportfiles + ['ignore_spec_c.txt']:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
 
