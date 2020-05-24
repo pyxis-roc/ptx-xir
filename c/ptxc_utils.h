@@ -82,3 +82,16 @@ int32_t SUB_SATURATE_s32(int32_t x, int32_t y) {
   // both same sign or no overflow detected
   return x - y;
 }
+
+static inline uint8_t ReadByte(uint8_t control, uint64_t value, uint8_t pos) {
+  uint8_t byte = 0;
+  byte = (value >> ((control & 0x7) * 8)) & 0xff;
+  if(control & 0x8) {
+	if(byte & 0x80)
+	  return 0xff;
+	else
+	  return 0x0;
+  } else {
+	return byte;
+  }
+}
