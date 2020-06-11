@@ -6,6 +6,7 @@
 
 /* placeholders, will be redefined at instantiation time */
 typedef uint16_t Ti;
+typedef uint16_t Tui;
 typedef uint32_t To;
 
 
@@ -147,4 +148,23 @@ static inline void extractAndSignExt_2(uint32_t src, Ti *dst) {
 	dst[i] = (Ti) ((int16_t) (src & 0xffff));
 	src >>= 16;
   }
+}
+
+static inline Ti ADD_CARRY(Ti a, Ti b, Ti cf, int *outcf) {
+  Tui ua, ub, ures, umax;
+  int f;
+
+  /* "behaviour is the same for signed and unsigned", so convert to unsigned */
+  ua = (Tui) a;
+  ub = (Tui) b;
+  umax = MAXVALUE(umax);
+
+  ures = ua + ub + (Tui) cf;
+
+  *outcf = (ua > (umax - ub)) || ((cf == 1) && ((ua + ub) == umax));
+
+  // this casting back should return the 2s complement signed integer?
+  // are all intXX_t types *are* always 2s complement: C99 7.18?
+  // or should we use memcpy to be safe [both here and above?]
+  return (Ti) ures;
 }
