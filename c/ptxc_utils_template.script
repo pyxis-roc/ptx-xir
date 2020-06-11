@@ -114,3 +114,9 @@ inst ADD_CARRY ADD_CARRY_s32 Ti=int32_t:Tui=uint32_t
 inst ADD_CARRY ADD_CARRY_u64 Ti=uint64_t:Tui=uint64_t
 inst ADD_CARRY ADD_CARRY_s64 Ti=int64_t:Tui=uint64_t
 generic ADD_CARRY W:X:Y:Z Ti W
+
+inst SUB_CARRY SUB_CARRY_u32 Ti=uint32_t:Tui=uint32_t
+inst SUB_CARRY SUB_CARRY_s32 Ti=int32_t:Tui=uint32_t
+inst SUB_CARRY SUB_CARRY_u64 Ti=uint64_t:Tui=uint64_t
+inst SUB_CARRY SUB_CARRY_s64 Ti=int64_t:Tui=uint64_t
+generic SUB_CARRY W:X:Y:Z Ti W

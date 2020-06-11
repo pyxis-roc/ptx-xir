@@ -168,3 +168,21 @@ static inline Ti ADD_CARRY(Ti a, Ti b, Ti cf, int *outcf) {
   // or should we use memcpy to be safe [both here and above?]
   return (Ti) ures;
 }
+
+static inline Ti SUB_CARRY(Ti a, Ti b, Ti cf, int *outcf) {
+  Tui ua, ub, ures;
+  int f;
+
+  /* "behaviour is the same for signed and unsigned", so convert to unsigned */
+  ua = (Tui) a;
+  ub = (Tui) b;
+
+  ures = ua - (ub + (Tui) cf);
+
+  *outcf = (ub > ua) || ((cf == 1) && (ua == ub));
+
+  // this casting back should return the 2s complement signed integer?
+  // are all intXX_t types *are* always 2s complement: C99 7.18?
+  // or should we use memcpy to be safe [both here and above?]
+  return (Ti) ures;
+}
