@@ -24,6 +24,8 @@
 							   int32_t: extract_24_signed)(X)
 
 #define MAXVALUE(x) _Generic((x), \
+							 int16_t: INT16_MAX,	\
+							 uint16_t: UINT16_MAX,	\
 							 int32_t: INT32_MAX,	\
 							 uint32_t: UINT32_MAX,	\
 							 int64_t: INT64_MAX,	\
