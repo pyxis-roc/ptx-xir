@@ -118,11 +118,14 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
 
     driver_func_defn = [f"void test_{funcname}({ret_args}, {', '.join(arglist)}) {{"]
 
-
-
     needs_cc = 'cc_reg' in set(pii.arg_types) or 'cc_reg' in set(pii.output_types)
     if needs_cc:
-        driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
+        if 'cc_reg' in pii.output_types:
+            driver_func_defn.append(g.visit(decl.type.args.params[-1].type.type) + " cc_reg;")
+            callargs = [ca if ca != "cc_reg" else "&cc_reg" for ca in callargs]
+        else:
+            driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
+
         driver_func_defn.append("cc_reg.cf = 0;")
 
     if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
