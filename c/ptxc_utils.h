@@ -35,6 +35,11 @@
 
 #define RCP(X) (1.0 / (X))
 
+typedef uint16_t bitstring16_t;
+typedef uint32_t bitstring32_t;
+typedef uint64_t bitstring64_t;
+typedef uint32_t BIT_T;
+
 static inline float FTZf(float x) {
   if(fpclassify(x) == FP_SUBNORMAL) {
 	return copysignf(0.0, x);
