@@ -98,6 +98,22 @@
 		(yw ((_ sign_extend 64) y)))
 	(bvmul xw yw)))
 
+(define-fun ADD_CARRY_u32 ((a u32) (b u32) (cf b1)) u32_carry
+  (let ((bvmax #xffffffff))
+	(mk-pair (bvadd (bvadd a b)
+					((_ zero_extend 31) cf))
+			 (ite (or (bvugt a (bvsub bvmax b))
+					  (and (= cf #b1) (= bvmax (bvadd a b))))
+				  #b1 #b0
+				  ))))
+
+(define-fun SUB_CARRY_u32 ((a u32) (b u32) (cf b1)) u32_carry
+  (mk-pair (bvsub a (bvadd b ((_ zero_extend 31) cf)))
+		   (ite (or (bvugt b a)
+					(and (= cf #b1) (= a b)))
+				#b1 #b0
+				)))
+
 (define-fun na_extractAndZeroExt_4 ((x b32) (pos u8)) b32
   ((_ zero_extend 24)
    (ite (= pos #x00)
