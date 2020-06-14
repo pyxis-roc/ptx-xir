@@ -107,6 +107,17 @@
 				  #b1 #b0
 				  ))))
 
+(define-fun ADD_CARRY_u64 ((a u64) (b u64) (cf b1)) u64_carry
+  (let ((bvmax #xffffffffffffffff))
+	(mk-pair (bvadd (bvadd a b)
+					((_ zero_extend 63) cf))
+			 (ite (or (bvugt a (bvsub bvmax b))
+					  (and (= cf #b1) (= bvmax (bvadd a b))))
+				  #b1 #b0
+				  ))))
+
+
+
 (define-fun SUB_CARRY_u32 ((a u32) (b u32) (cf b1)) u32_carry
   (mk-pair (bvsub a (bvadd b ((_ zero_extend 31) cf)))
 		   (ite (or (bvugt b a)
