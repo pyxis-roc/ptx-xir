@@ -82,6 +82,7 @@ WRITERS = {'u16': lambda x: str(int(x)),
            'b32': lambda x: str(int(x)),
            'b64': lambda x: str(int(x)),
            'pred': lambda x: str(int(x)),
+           'cc_reg': lambda x: str(int(x)),
            'f32': lambda x: conform_c(x.hex()),
            'f64': lambda x: conform_c(x.hex())}
 
