@@ -27,6 +27,7 @@ READERS = {'u16': int,
            'b32': int,
            'b64': int,
            'pred': int,
+           'cc_reg': int,
            'f32': lambda x: float.fromhex(x),
            'f64': lambda x: float.fromhex(x)}
 

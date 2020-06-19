@@ -38,22 +38,6 @@ def test_{insn}(testcases):
     return testutils_smt2.get_output(SMT2STR, scr, "z3", {ptx_output_type})
 """
 
-X_CC_TEST_HARNESS = """
-NARGS = {nargs}
-
-class CC(object):
-    cf = 0 #TODO
-
-def test_{insn}(testcases):
-    out = []
-    cc_reg = CC()
-    for {iter_arg_list} in testcases:
-        result = execute_{insn}({arg_list}, cc_reg)
-        out.append(result)
-
-    return out
-"""
-
 EPILOGUE = """
 if __name__ == "__main__":
     import testutils
@@ -120,8 +104,8 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     needs_cc = 'cc_reg' in pii.arg_types or 'cc_reg' in pii.output_types
 
     if needs_cc:
-        th = X_CC_TEST_HARNESS
-        nargs -= 1
+        th = X_TEST_HARNESS
+        #nargs -= 1
     else:
         th = X_TEST_HARNESS
 
@@ -159,7 +143,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     #TODO: needs to be in PTX Instruction Info
 
     # note: cc_reg flag is not really observable, so don't output it?
-    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and needs_cc):
+    if len(pii.output_types) == 1: # or (len(pii.output_types) == 2 and needs_cc):
         # homogeneous output
         template['writer'] = f"write_{pii.output_types[0]}_test_cases"
         template['writer_args'] = "(args.output, results)"
@@ -172,7 +156,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
 
     # cc_reg workaround
     cpii = pii.copy()
-    cpii.arg_types = [x for x in cpii.arg_types[:nargs] if x != 'cc_reg']
+    #cpii.arg_types = [x for x in cpii.arg_types[:nargs] if x != 'cc_reg']
 
     fmt_str = str(tuple(cpii.arg_types))
     template['fmt_str'] = fmt_str
