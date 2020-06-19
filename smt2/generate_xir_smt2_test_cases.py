@@ -215,7 +215,8 @@ def write_tests(tests, outputdir, srcpath, semantics):
 
     write_all_tests(tests, dst, write_contents = True, mark_executable = True)
     write_static_metadata(dst, 'git', ignore_spec='ignore_spec_smt2.txt',
-                          ptx_semantics = ptx.__file__)
+                          ptx_semantics = ptx.__file__,
+                          filter_cc_reg = True)
 
     for support in ['smt2ast.py', 'testutils.py', 'testutils_smt2.py', 'ignore_spec_smt2.txt']:
         print(f"Copying {srcpath / support} to {dst / support}")
