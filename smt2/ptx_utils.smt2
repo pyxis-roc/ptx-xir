@@ -125,6 +125,13 @@
 				#b1 #b0
 				)))
 
+(define-fun SUB_CARRY_u64 ((a u64) (b u64) (cf b1)) u64_carry
+  (mk-pair (bvsub a (bvadd b ((_ zero_extend 63) cf)))
+		   (ite (or (bvugt b a)
+					(and (= cf #b1) (= a b)))
+				#b1 #b0
+				)))
+
 (define-fun na_extractAndZeroExt_4 ((x b32) (pos u8)) b32
   ((_ zero_extend 24)
    (ite (= pos #x00)
