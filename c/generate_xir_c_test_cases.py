@@ -97,10 +97,10 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     g = c_generator.CGenerator()
 
     if not pii.base_instruction:
-        arglist = [g.visit(p) for p in decl.type.args.params if p.name != 'cc_reg']
+        arglist = [g.visit(p) for p in decl.type.args.params]
         callargs = [d.name for d in decl.type.args.params]
     else:
-        arglist = [g.visit(p) for p in decl.type.args.params[:pii.nargs] if p.name != 'cc_reg']
+        arglist = [g.visit(p) for p in decl.type.args.params[:pii.nargs]]
         callargs = [d.name for d in decl.type.args.params[:pii.nargs]]
 
         if base_pii is None:
@@ -110,7 +110,7 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
         for p in base_pii.abstract_params:
             callargs.append(str(pii.abstract_args[p]))
 
-    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
+    if len(pii.output_types) == 1:
         ret_args = f"{ret_type} * result"
     else:
         ret_args = [f"{ptx.PTX_TO_C_TYPES[a]} * result{k}" for k, a in enumerate(pii.output_types)]
@@ -118,40 +118,35 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
 
     driver_func_defn = [f"void test_{funcname}({ret_args}, {', '.join(arglist)}) {{"]
 
-    needs_cc = 'cc_reg' in set(pii.arg_types) or 'cc_reg' in set(pii.output_types)
-    if needs_cc:
-        if 'cc_reg' in pii.output_types:
-            driver_func_defn.append(g.visit(decl.type.args.params[-1].type.type) + " cc_reg;")
-            callargs = [ca if ca != "cc_reg" else "&cc_reg" for ca in callargs]
-        else:
-            driver_func_defn.append(g.visit(decl.type.args.params[-1]) + ";")
+    if 'cc_reg' in pii.output_types:
+        CC_REG_ARG = callargs[pii.arg_types.index('cc_reg')]
 
-        driver_func_defn.append("cc_reg.cf = 0;")
-
-    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
+    if len(pii.output_types) == 1:
         driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
+    elif len(pii.output_types) == 2 and 'cc_reg' in pii.output_types:
+        driver_func_defn.append(f"\t*result0 = {ptx_funcname}({', '.join(callargs)});")
+        driver_func_defn.append(f"\tresult1->cf = {CC_REG_ARG}->cf;")
     else:
-        # TODO
         driver_func_defn.append(f"struct retval_{insn} result;")
         driver_func_defn.append(f"\tresult = {ptx_funcname}({', '.join(callargs)});")
-        for k in range(len(pii.output_types)):
-            driver_func_defn.append(f"\t*result{k} = result.out{k};")
+        for k,  t in enumerate(pii.output_types):
+            if t != 'cc_reg': # this code will never run, since only setp_q returns a struct
+                driver_func_defn.append(f"\t*result{k} = result.out{k};")
+            else:
+                driver_func_defn.append(f"\tresult{k}->cf = {CC_REG_ARG}->cf;")
 
     # THIS MUST AGREE WITH EPILOGUE
-    if len(pii.output_types) == 1 or (len(pii.output_types) == 2 and pii.output_types[1] == 'cc_reg'):
+    if len(pii.output_types) == 1:
         testcall_args = ["&results[i]"]
     else:
         testcall_args = [f"&results[i].out{k}" for k in range(len(pii.output_types))]
 
-    cpii = pii.copy()
-    cpii.arg_types = [x for x in cpii.arg_types if x != 'cc_reg']
-
-    if cpii.is_homogeneous(): # TODO: handle cc_regq
-        testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(cpii.nargs)])
+    if pii.is_homogeneous():
+        testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(pii.nargs)])
     else:
-        testcall_args.extend([f"args[i].arg{i}" for i in range(cpii.nargs)])
+        cc_reg_is_out = 'cc_reg' in pii.output_types
+        testcall_args.extend([f"{'&' if cc_reg_is_out and t == 'cc_reg' else ''}args[i].arg{i}" for i, t in enumerate(pii.arg_types)])
 
-    #testcall_args = ["&results[i]"] + [f"args[i*{nargs}+{i}]" for i in range(nargs)]
     call = f"test_{funcname}({', '.join(testcall_args)})"
 
     return call, "\n".join(driver_func_defn) + "\n}\n"
@@ -176,7 +171,7 @@ def gen_test_case(dpii, insn, fdecl):
 
     template = gen_io_template(pii, insn, ptx.PTX_TO_C_TYPES,
                                ptx.PTX_TO_SCANF_FORMAT_STRING,
-                               ptx.PTX_TO_PRINTF_FORMAT_STRING)
+                               ptx.PTX_TO_PRINTF_FORMAT_STRING, ignore_cc_reg = False)
 
     if pii.base_instruction:
         base_pii = dpii[pii.base_instruction]
@@ -242,7 +237,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 
     # create tests.yaml
     write_all_tests(tests, dst, write_contents=True)
-    write_static_metadata(dst, 'git', ignore_spec='ignore_spec_c.txt')
+    write_static_metadata(dst, 'git', ignore_spec='ignore_spec_c.txt', filter_cc_reg = True)
 
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
