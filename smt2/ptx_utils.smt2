@@ -98,6 +98,15 @@
 		(yw ((_ sign_extend 64) y)))
 	(bvmul xw yw)))
 
+(define-fun ADD_CARRY_u16 ((a u16) (b u16) (cf b1)) u16_carry
+  (let ((bvmax #xffff))
+	(mk-pair (bvadd (bvadd a b)
+					((_ zero_extend 15) cf))
+			 (ite (or (bvugt a (bvsub bvmax b))
+					  (and (= cf #b1) (= bvmax (bvadd a b))))
+				  #b1 #b0
+				  ))))
+
 (define-fun ADD_CARRY_u32 ((a u32) (b u32) (cf b1)) u32_carry
   (let ((bvmax #xffffffff))
 	(mk-pair (bvadd (bvadd a b)
