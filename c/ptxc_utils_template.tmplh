@@ -186,3 +186,8 @@ static inline Ti SUB_CARRY(Ti a, Ti b, Ti cf, int *outcf) {
   // or should we use memcpy to be safe [both here and above?]
   return (Ti) ures;
 }
+
+static inline Ti MACHINE_SPECIFIC_execute_rem_divide_by_neg(Ti a, Ti b) {
+  // TODO: what if b is INT_MIN?
+  return a % ABSOLUTE(b);
+}

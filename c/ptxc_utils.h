@@ -31,6 +31,12 @@
 							 int64_t: INT64_MAX,	\
 							 uint64_t: UINT64_MAX)
 
+#define ABSOLUTE(x) _Generic((x), \
+							 int16_t: abs,	\
+							 int32_t: abs,	\
+							 int64_t: labs)(x)
+
+
 #endif
 
 #define RCP(X) (1.0 / (X))

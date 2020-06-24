@@ -124,3 +124,8 @@ inst SUB_CARRY SUB_CARRY_s32 Ti=int32_t:Tui=uint32_t
 inst SUB_CARRY SUB_CARRY_u64 Ti=uint64_t:Tui=uint64_t
 inst SUB_CARRY SUB_CARRY_s64 Ti=int64_t:Tui=uint64_t
 generic SUB_CARRY W:X:Y:Z Ti W
+
+inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s16 Ti=int16_t
+inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s32 Ti=int32_t
+inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s64 Ti=int64_t
+generic MACHINE_SPECIFIC_execute_rem_divide_by_neg X:Y Ti X
