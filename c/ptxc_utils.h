@@ -2,6 +2,10 @@
 #include <math.h>
 #include <fenv.h>
 
+#ifdef USE_PTXM
+#include "models.h" /* ptxs models.h for PTX math instructions */
+#endif
+
 #ifndef PYCPARSER /* pycparser doesn't handle _Generic */
 #define FTZ(X) _Generic((X), \
 						float: FTZf,			\
@@ -18,6 +22,23 @@
 #define SQRT(X) _Generic((X),				\
 						 float: sqrtf,		\
 						 double: sqrt)(X)
+
+#define SINE(X) _Generic((X),				\
+						 float: sinf,		\
+						 double: sin)(X)
+
+#define COSINE(X) _Generic((X),				\
+						 float: cosf,		\
+						 double: cos)(X)
+
+#define LOG2(X) _Generic((X),				\
+						 float: log2f,		\
+						 double: log2)(X)
+
+#define EXP2(X) _Generic((X),           \
+                         float: exp2,   \
+                         double: exp2)(X)
+
 
 #define extract_24(X) _Generic((X),								\
 							   uint32_t: extract_24_unsigned,	\
@@ -39,7 +60,45 @@
 
 #endif
 
+#ifdef USE_PTXM
+
+#define RCP(X) ptxs_rcp(X)
+
+#undef SQRT
+#undef SINE
+#undef COSINE
+#undef LOG2
+#undef EXP2
+
+#ifndef PYCPARSER
+#define SQRT(X) _Generic((X),				\
+						 float: ptxs_sqrt,  \
+						 double: sqrt)(X)
+
+#define SINE(X) _Generic((X),				\
+						 float: ptxs_sin,   \
+						 double: sin)(X)
+
+#define COSINE(X) _Generic((X),				\
+                           float: ptxs_cos, \
+                           double: cos)(X)
+
+#define LOG2(X) _Generic((X),				\
+						 float: ptxs_lg2,   \
+						 double: log2)(X)
+
+#define EXP2(X) _Generic((X),				\
+                         float: ptxs_ex2,   \
+                         double: exp2)(X)
+
+#endif
+
+#define RSQRT(X) ptxs_rsqrt(X)
+
+#else
 #define RCP(X) (1.0 / (X))
+#define RSQRT(X) RCP(SQRT(X))
+#endif
 
 typedef uint16_t bitstring16_t;
 typedef uint32_t bitstring32_t;
