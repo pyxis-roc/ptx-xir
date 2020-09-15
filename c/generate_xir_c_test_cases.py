@@ -241,15 +241,25 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
 
     # generate a makefile
     with open(dst / 'Makefile', 'w') as f:
-        f.write(f"all: libptxc.so {' '.join(tests.keys())}\n\n") #TODO: libptxc.so
+        OBJS=' '.join(tests.keys())
+        f.write(f"all: libptxc.so {OBJS}\n\n") #TODO: libptxc.so
         #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write("include Makefile.testutils\n")
-        f.write(f'libptxc.so: {sources[0]} lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm -o $@\n\n')
+        f.write("""ifeq ($(USE_PTXM),1)
+PTXM_FLAGS=-L. -lptxs -DUSE_PTXM
+else
+PTXM_FLAGS=
+endif
+""")
+        f.write(f'libptxc.so: {sources[0]} lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -o $@\n\n')
 
         src = [x for x in sources if x != 'ptxc.c']
 
         for t in tests:
             f.write(f"{t}: {t}.c testutils.o {' '.join(src)}\n\tgcc -g -O3 -L. -Wl,-rpath,'$$ORIGIN' $^ -lptxc -lm -o $@\n\n")
+
+        f.write(".PHONY: clean\n")
+        f.write(f"clean:\n\trm -f libptxc.so {OBJS}\n")
 
     # copy files
     for support in sources + supportfiles + ['ignore_spec_c.txt']:
