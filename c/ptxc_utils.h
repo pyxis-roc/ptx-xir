@@ -39,6 +39,9 @@
                          float: exp2,   \
                          double: exp2)(X)
 
+#define COPYSIGN(X, Y) _Generic((X),                    \
+                                float: copysignf,       \
+                                double: copysign)(X, Y)
 
 #define extract_24(X) _Generic((X),								\
 							   uint32_t: extract_24_unsigned,	\
