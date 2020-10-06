@@ -3,7 +3,7 @@
 #include <fenv.h>
 
 #ifdef USE_PTXM
-#include "models.h" /* ptxs models.h for PTX math instructions */
+#include <ptxm/models.h> /* ptxs models.h for PTX math instructions */
 #endif
 
 #ifndef PYCPARSER /* pycparser doesn't handle _Generic */
@@ -65,7 +65,15 @@
 
 #ifdef USE_PTXM
 
-#define RCP(X) ptxs_rcp(X)
+#define ptxm_rcp ptxm_rcp_sm5x
+#define ptxm_sqrt ptxm_sqrt_sm5x
+#define ptxm_sin ptxm_sin_sm5x
+#define ptxm_cos ptxm_cos_sm5x
+#define ptxm_lg2 ptxm_lg2_sm5x
+#define ptxm_ex2 ptxm_ex2_sm5x
+#define ptxm_rsqrt ptxm_rsqrt_sm5x
+
+#define RCP(X) ptxm_rcp(X)
 
 #undef SQRT
 #undef SINE
@@ -75,28 +83,28 @@
 
 #ifndef PYCPARSER
 #define SQRT(X) _Generic((X),				\
-						 float: ptxs_sqrt,  \
+						 float: ptxm_sqrt,  \
 						 double: sqrt)(X)
 
 #define SINE(X) _Generic((X),				\
-						 float: ptxs_sin,   \
+						 float: ptxm_sin,   \
 						 double: sin)(X)
 
 #define COSINE(X) _Generic((X),				\
-                           float: ptxs_cos, \
+                           float: ptxm_cos, \
                            double: cos)(X)
 
 #define LOG2(X) _Generic((X),				\
-						 float: ptxs_lg2,   \
+						 float: ptxm_lg2,   \
 						 double: log2)(X)
 
 #define EXP2(X) _Generic((X),				\
-                         float: ptxs_ex2,   \
+                         float: ptxm_ex2,   \
                          double: exp2)(X)
 
 #endif
 
-#define RSQRT(X) ptxs_rsqrt(X)
+#define RSQRT(X) ptxm_rsqrt(X)
 
 #else
 #define RCP(X) (1.0 / (X))
