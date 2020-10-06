@@ -246,7 +246,7 @@ def write_tests(tests, outputdir, srcpath, sources, supportfiles):
         #f.write(f'testutils.o: testutils.c testutils.h\n\tgcc -std=c99 -c -g $< -o $@\n\n')
         f.write("include Makefile.testutils\n")
         f.write("""ifeq ($(USE_PTXM),1)
-PTXM_FLAGS=-L. -lptxs -DUSE_PTXM
+PTXM_FLAGS=-L$(PTXM_INSTALL)/lib -I$(PTXM_INSTALL)/include -lptxm -DUSE_PTXM
 else
 PTXM_FLAGS=
 endif
