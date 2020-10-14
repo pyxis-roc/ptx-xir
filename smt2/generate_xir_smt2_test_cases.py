@@ -118,7 +118,13 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     if deriv_pii is not None:
         # TODO: locate abstract argument position in instruction semantics, and place it there
         # right now, there is an assumption that all arguments occur at end of instruction
-        ast = smt2ast.SMT2Parser.parse("\n".join(fdef))[0]
+        ast = smt2ast.SMT2Parser.parse("\n".join(fdef))
+        for f in ast:
+            if smt2ast.is_call(f, 'define-fun') and f.v[1].v == 'execute_' + pii.base_instruction:
+                ast = f
+                break
+        else:
+            raise ValueError(f"Unable to find base instruction execute_{pii.base_instruction} definition!")
 
         # name
         ast.v[1] = smt2ast.Symbol("execute_" + insn)
@@ -178,11 +184,11 @@ def gen_abstract_tests(dpii, base, abs_semantics, out):
 
     for insn in derivatives:
         try:
-            assert insn not in out, f"Duplicate instruction semantics {insn} ({f})"
+            assert insn not in out, f"Duplicate instruction semantics {insn}"
             _, test = gen_test_case(dpii, insn, abs_semantics, dpii[base])
             out[insn] = InstructionTest(insn, f"{insn}.py", test, '')
         except NotImplementedError as e:
-            print(f"{f} test case generation support not yet implemented ({e})")
+            print(f"{insn} test case generation support not yet implemented ({e})")
 
     return len(derivatives)
 
