@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 
 def read_integer_test_cases(tcfile, nargs):
     out = []
@@ -65,11 +66,19 @@ def conform_c(x):
     else:
         return x
 
+def float_hex2(x):
+    """Replacement for float.hex that does not discards sign from NaN"""
+
+    if math.isnan(x) and (math.copysign(1., x) == -1.0):
+        return "-nan"
+
+    return x.hex()
+
 def write_float_test_cases(outfile, results):
     with open(outfile, "w") as f:
         for r in results:
             # note: we always write doubles, because that's what %a also does in printf
-            l = f"{conform_c(r.hex())}\n"
+            l = f"{conform_c(float_hex2(r))}\n"
             f.write(l)
 
 WRITERS = {'u16': lambda x: str(int(x)),
@@ -83,8 +92,8 @@ WRITERS = {'u16': lambda x: str(int(x)),
            'b64': lambda x: str(int(x)),
            'pred': lambda x: str(int(x)),
            'cc_reg': lambda x: str(int(x)),
-           'f32': lambda x: conform_c(x.hex()),
-           'f64': lambda x: conform_c(x.hex())}
+           'f32': lambda x: conform_c(float_hex2(x)),
+           'f64': lambda x: conform_c(float_hex2(x))}
 
 def write_custom_test_cases(fmt, outfile, results):
     with open(outfile, "w") as f:
