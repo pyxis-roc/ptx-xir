@@ -51,7 +51,6 @@ def read_float_test_cases(tcfile, nargs):
 
             ls = ls[:nargs]
 
-            # note: fromhex doesn't distinguish -nan and +nan
             out.append([float.fromhex(x) for x in ls])
 
     return out
