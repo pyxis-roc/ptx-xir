@@ -167,11 +167,13 @@ int32_t ADD_SATURATE_s32(int32_t x, int32_t y) {
 }
 
 int32_t SUB_SATURATE_s32(int32_t x, int32_t y) {
+  /* 0 - +ve will never cause underflow */
   if(x < 0 && y > 0 && x < INT32_MIN + y) {
 	return INT32_MIN;
   }
 
-  if(x > 0 && y < 0 && x > INT32_MAX + y) {
+  /* 0 - -ve can cause overflow */
+  if(x >= 0 && y < 0 && x > INT32_MAX + y) {
 	return INT32_MAX;
   }
 
