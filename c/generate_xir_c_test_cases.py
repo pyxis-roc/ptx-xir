@@ -21,6 +21,7 @@ from gpusemtest.isa import ptx
 from gpusemtest.utils.testinfo import InstructionTest, write_all_tests
 from gpusemtest.utils.ctestutils import *
 from gpusemtest.utils.metadata import write_static_metadata
+import sys
 
 PROLOGUE = """
 /* -*- mode: c++ -*- */
@@ -291,6 +292,10 @@ if __name__ == '__main__':
     p.add_argument("--source", help="Source file containing definitions", default="ptxc.c")
     p.add_argument('--fakecheaders', help="Fake C headers for pycparser", default="/usr/share/python-pycparser/fake_libc_include") # this assumes that a pycparser package is installed
     args = p.parse_args()
+
+    if not pathlib.Path(args.fakecheaders).exists():
+        print(f"ERROR: Path {args.fakecheaders} (--fakecheaders) does not exist", file=sys.stderr)
+        sys.exit(1)
 
     main(args)
 
