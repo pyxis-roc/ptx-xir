@@ -191,3 +191,26 @@ static inline Ti MACHINE_SPECIFIC_execute_rem_divide_by_neg(Ti a, Ti b) {
   // TODO: what if b is INT_MIN?
   return a % ABSOLUTE(b);
 }
+
+static inline Ti SHL(Ti a, uint32_t b) {
+  if(b >= INTWIDTH(a)) {
+    // Shifting by bitwidth is not defined in C. However, PTX
+    // documentation says "greater than N are clamped to N", so we
+    // believe it is defined in PTX.
+    b = INTWIDTH(a);
+    a <<= (b - 1);
+    return a << 1;
+  } else {
+    return a << b;
+  }
+}
+
+static inline Ti SHR(Ti a, uint32_t b) {
+  if(b >= INTWIDTH(a)) {
+    b = INTWIDTH(a);
+    a >>= (b - 1);
+    return a >> 1;
+  } else {
+    return a >> b;
+  }
+}

@@ -60,6 +60,14 @@
 							 int32_t: abs,	\
 							 int64_t: labs)(x)
 
+#define INTWIDTH(x) _Generic((x), \
+							 int16_t: 16,	\
+							 uint16_t: 16,	\
+							 int32_t: 32,	\
+							 uint32_t: 32,	\
+							 int64_t: 64,	\
+							 uint64_t: 64)
+
 
 #endif
 

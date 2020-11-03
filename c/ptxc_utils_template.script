@@ -129,3 +129,16 @@ inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_div
 inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s32 Ti=int32_t
 inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s64 Ti=int64_t
 generic MACHINE_SPECIFIC_execute_rem_divide_by_neg X:Y Ti X
+
+inst SHL SHL_u16 Ti=uint16_t
+inst SHL SHL_u32 Ti=uint32_t
+inst SHL SHL_u64 Ti=uint64_t
+generic SHL X:Y Ti X
+
+inst SHR SHR_s16 Ti=int16_t
+inst SHR SHR_s32 Ti=int32_t
+inst SHR SHR_s64 Ti=int64_t
+inst SHR SHR_u16 Ti=uint16_t
+inst SHR SHR_u32 Ti=uint32_t
+inst SHR SHR_u64 Ti=uint64_t
+generic SHR X:Y Ti X
