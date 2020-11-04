@@ -39,7 +39,8 @@ static inline To MUL24(Ti x, Ti y) {
 static inline Ti SATURATE(Ti x) {
   if(isnan(x)) return 0.0;
 
-  if(x < 0.0)
+  /* SAT(-0.0) = +0.0 from reading of spec for add.sat.f32 */
+  if(x <= 0.0)
 	return 0.0;
   else if (x > 1.0)
 	return 1.0;
