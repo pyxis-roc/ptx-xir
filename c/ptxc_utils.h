@@ -81,8 +81,7 @@
 #define ptxm_ex2 ptxm_ex2_sm5x
 #define ptxm_rsqrt ptxm_rsqrt_sm5x
 
-#define RCP(X) ptxm_rcp(X)
-
+#undef RCP
 #undef SQRT
 #undef SINE
 #undef COSINE
@@ -90,6 +89,16 @@
 #undef EXP2
 
 #ifndef PYCPARSER
+#define RCP_DOUBLE(X) 1.0/(X)
+
+#define RCP(X) _Generic((X),                    \
+                        float: ptxm_rcp,        \
+                        double: RCP_DOUBLE)(X)
+
+#define RSQRT(X) _Generic((X),                      \
+                          float: ptxm_rsqrt,        \
+                          double: RSQRT_DOUBLE)(X)
+
 #define SQRT(X) _Generic((X),				\
 						 float: ptxm_sqrt,  \
 						 double: sqrt)(X)
@@ -112,7 +121,7 @@
 
 #endif
 
-#define RSQRT(X) ptxm_rsqrt(X)
+#define RSQRT_DOUBLE(X) RCP_DOUBLE(SQRT(X))
 
 #else
 #define RCP(X) (1.0 / (X))
