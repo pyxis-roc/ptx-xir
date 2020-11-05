@@ -89,8 +89,6 @@
 #undef EXP2
 
 #ifndef PYCPARSER
-#define RCP_DOUBLE(X) 1.0/(X)
-
 #define RCP(X) _Generic((X),                    \
                         float: ptxm_rcp,        \
                         double: RCP_DOUBLE)(X)
@@ -120,8 +118,8 @@
                          double: exp2)(X)
 
 #endif
-
-#define RSQRT_DOUBLE(X) RCP_DOUBLE(SQRT(X))
+static inline double RCP_DOUBLE(double X) { return 1.0/X; }
+static inline double RSQRT_DOUBLE(double X) {return RCP_DOUBLE(SQRT(X)); }
 
 #else
 #define RCP(X) (1.0 / (X))
@@ -141,7 +139,7 @@ static inline float FTZf(float x) {
   return x;
 }
 
-static inline float FTZd(double x) {
+static inline double FTZd(double x) {
   if(fpclassify(x) == FP_SUBNORMAL) {
 	return copysign(0.0, x);
   }
