@@ -200,3 +200,13 @@ static inline uint8_t ReadByte(uint8_t control, uint64_t value, uint8_t pos) {
 	return byte;
   }
 }
+
+static inline float DIV_FULL(float dividend, float divisor) {
+  // this is not a correct implementation...
+  return dividend / divisor;
+}
+
+static inline float DIV_APPROX(float dividend, float divisor) {
+  // this is not a correct implementation...
+  return dividend / divisor;
+}
