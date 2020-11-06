@@ -53,7 +53,7 @@
   (let ((INT32_MAX #x7fffffff) (INT32_MIN #x80000000) (INT32_ZERO #x00000000))
 	(ite (and (bvslt x INT32_ZERO) (bvsgt y INT32_ZERO) (bvslt x (bvadd INT32_MIN y)))
 		 INT32_MIN
-		 (ite (and (bvsgt x INT32_ZERO) (bvslt y INT32_ZERO) (bvsgt x (bvadd INT32_MAX y)))
+		 (ite (and (bvsge x INT32_ZERO) (bvslt y INT32_ZERO) (bvsgt x (bvadd INT32_MAX y)))
 			  INT32_MAX
 			  (bvsub x y)))))
 
