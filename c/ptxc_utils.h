@@ -210,3 +210,29 @@ static inline float DIV_APPROX(float dividend, float divisor) {
   // this is not a correct implementation...
   return dividend / divisor;
 }
+
+static inline float fminf_ptx(float a, float b) {
+  float res;
+  res = fminf(a, b);
+
+  // ptx requires +0.0 > -0.0
+  if((res == 0.0) && (a == b)) {
+    if(signbit(a))
+      return a;
+    else
+      return b;
+  }
+}
+
+static inline float fmaxf_ptx(float a, float b) {
+  float res;
+  res = fmaxf(a, b);
+
+  // ptx requires +0.0 > -0.0
+  if((res == 0.0) && (a == b)) {
+    if(signbit(a))
+      return b;
+    else
+      return a;
+  }
+}
