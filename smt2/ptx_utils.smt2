@@ -20,7 +20,7 @@
 	(let ( (one_f32 ((_ to_fp_unsigned 8 24) roundNearestTiesToEven #x00000001)) )
 	  (ite (fp.isNaN x)
 		   zero_f32
-		   (ite (fp.lt x zero_f32)
+		   (ite (fp.leq x zero_f32)
 				zero_f32
 				(ite (fp.gt x one_f32) one_f32 x))))))
 
@@ -29,7 +29,7 @@
 	(let ( (one_f64 ((_ to_fp_unsigned 11 53) roundNearestTiesToEven #x0000000000000001)) )
 	  (ite (fp.isNaN x)
 		   zero_f64
-		   (ite (fp.lt x zero_f64) zero_f64
+		   (ite (fp.leq x zero_f64) zero_f64
 				(ite (fp.gt x one_f64) one_f64 x))))))
 
 (define-fun abs_s16 ((x s16)) s16
