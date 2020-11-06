@@ -207,6 +207,18 @@ static inline float DIV_FULL(float dividend, float divisor) {
 }
 
 static inline float DIV_APPROX(float dividend, float divisor) {
+  int special_case = 0;
+
+  // based on a liberal reading of __fdividef in the CUDA Math API, as
+  // well as actual outputs.
+
+  if(!(isinf(divisor) || isnan(divisor))) {
+    special_case = (0x1.0p126 < fabsf(divisor) && fabsf(divisor) < 0x1.0p128);
+  }
+
+  if(special_case && !isnan(dividend))
+    return isinf(dividend) ? NAN : 0.0;
+
   // this is not a correct implementation...
   return dividend / divisor;
 }
