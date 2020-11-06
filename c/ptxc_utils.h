@@ -222,6 +222,8 @@ static inline float fminf_ptx(float a, float b) {
     else
       return b;
   }
+
+  return res;
 }
 
 static inline float fmaxf_ptx(float a, float b) {
@@ -235,4 +237,6 @@ static inline float fmaxf_ptx(float a, float b) {
     else
       return a;
   }
+
+  return res;
 }
