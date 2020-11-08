@@ -211,6 +211,21 @@
        )
   )
 
+; see __fdividef
+(define-fun DIV_APPROX ((x f32) (y f32)) f32
+  (let ((absy (fp.abs y)) (lrange (fp #b0 #xfd #b00000000000000000000000)) (urange (fp #b0 #xff #b00000000000000000000000)))
+    (let ((not_in_range (and (not (or (fp.isInfinite y) (fp.isNaN y))) (fp.lt lrange absy) (fp.lt absy urange))))
+      (ite (and not_in_range (not (fp.isNaN x)))
+           (ite (fp.isInfinite x) (_ NaN 8 24) (_ +zero 8 24))
+           (fp.div RTN x y)
+           )
+      )
+    )
+  )
+
+; this is full range, but still approximate
+(define-fun DIV_FULL ((x f32) (y f32)) f32 (fp.div RTN x y))
+
 ; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
 ; these need to be implemented
