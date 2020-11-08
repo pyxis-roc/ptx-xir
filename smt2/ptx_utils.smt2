@@ -202,7 +202,7 @@
   )
 
 (define-fun MAX_f32 ((x f32) (y f32)) f32
-  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isPositive x) (fp.isPositive y)))
        (_ +zero 8 24)
        (fp.max x y)
        )
