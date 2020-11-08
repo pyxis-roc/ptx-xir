@@ -183,6 +183,34 @@
 			  )
 		 ))))
 
+(define-fun MIN_f32 ((x f32) (y f32)) f32
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+       (_ -zero 8 24)
+       (fp.min x y)
+       )
+  )
+
+(define-fun MIN_f64 ((x f64) (y f64)) f64
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+       (_ -zero 11 53)
+       (fp.min x y)
+       )
+  )
+
+(define-fun MAX_f32 ((x f32) (y f32)) f32
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+       (_ +zero 8 24)
+       (fp.max x y)
+       )
+  )
+
+(define-fun MAX_f64 ((x f64) (y f64)) f64
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+       (_ +zero 11 53)
+       (fp.max x y)
+       )
+  )
+
 ; machine-specific
 ;(define-fun MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned_u16 ((x u16)) u16 x)
 ; these need to be implemented
@@ -202,3 +230,4 @@
 
 (define-fun pow_f32 ((x f32) (y f32)) f32 x)
 (define-fun pow_f64 ((x f64) (y f32)) f64 x)
+
