@@ -142,7 +142,7 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     else:
         testcall_args = [f"&results[i].out{k}" for k in range(len(pii.output_types))]
 
-    if pii.is_homogeneous():
+    if not input_uses_custom_struct(pii):
         testcall_args.extend([f"args[i*{pii.nargs}+{i}]" for i in range(pii.nargs)])
     else:
         cc_reg_is_out = 'cc_reg' in pii.output_types
@@ -276,8 +276,10 @@ endif
 
 
 def main(args):
+    global fakecheaders
+
     pii = ptx.PTXInstructionInfo.load(v=65)
-    decls = load_declarations(args.source, args.fakecheaders)
+    decls = load_declarations(args.source, fakecheaders)
     #decls = {'setp_q_eq_ftz_f32': decls['setp_q_eq_ftz_f32']}
 
     total, tests = gen_all_tests(pii, decls)
@@ -290,12 +292,23 @@ if __name__ == '__main__':
     p.add_argument("testcasedir", help="Directory for test cases")
     p.add_argument("--header", help="Header file containing declarations", default="ptxc.h")
     p.add_argument("--source", help="Source file containing definitions", default="ptxc.c")
+    p.add_argument('--altfakecheaders', help="Alternate locations for fake C headers for pycparser", action="append", default=[])
     p.add_argument('--fakecheaders', help="Fake C headers for pycparser", default="/usr/share/python-pycparser/fake_libc_include") # this assumes that a pycparser package is installed
     args = p.parse_args()
 
-    if not pathlib.Path(args.fakecheaders).exists():
+
+    fakecheaders = None
+    for d in [args.fakecheaders] + args.altfakecheaders:
+        if pathlib.Path(d).exists():
+            fakecheaders=d
+            break
+    else:
         print(f"ERROR: Path {args.fakecheaders} (--fakecheaders) does not exist", file=sys.stderr)
+        if len(args.altfakecheaders):
+            print(f"ERROR: No path in {args.altfakecheaders} (--altfakecheaders) also exists", file=sys.stderr)
+
         sys.exit(1)
 
+    print(f"Using {fakecheaders} as fakecheaders directory...")
     main(args)
 
