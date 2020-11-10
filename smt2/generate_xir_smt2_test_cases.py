@@ -28,14 +28,14 @@ SMT2STR = {smt2str}
 X_TEST_HARNESS = """
 NARGS = {nargs}
 
-def test_{insn}(testcases):
+def test_{insn}(testcases, solver="z3"):
     smt2_testcases = testutils.encode_test_cases({fmt_str}, testcases, smt2_literal)
 
     scr = []
     for tc in smt2_testcases:
         scr.append(SExprList(Symbol("get-value"), SExprList(SExprList(Symbol("execute_{insn}"), *tc))))
 
-    return testutils_smt2.get_output(SMT2STR, scr, "z3", {ptx_output_type})
+    return testutils_smt2.get_output(SMT2STR, scr, solver, {ptx_output_type})
 """
 
 EPILOGUE = """
@@ -46,11 +46,12 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Run test cases for {insn}")
     p.add_argument("input", help="Input file containing test cases")
     p.add_argument("output", help="Output file containing test cases")
+    p.add_argument("--solver", help="SMT2 solver to use", default="z3")
 
     args = p.parse_args()
 
     testcases = testutils.{reader}{reader_args}
-    results = test_{insn}(testcases)
+    results = test_{insn}(testcases, solver=args.solver)
     testutils.{writer}{writer_args}
 
 """
@@ -76,7 +77,7 @@ def load_execute_functions(semfile):
                     assert block == block2, f"end encountered for block {block2}, but in block {block}"
 
                     if block == "global":
-                        gl = contents
+                        gl = ['(set-logic QF_FPBV)\n', '(set-option :produce-models true)\n'] + contents
                     else:
                         assert block not in out, f"Duplicate block {block}"
                         out[block] = contents
