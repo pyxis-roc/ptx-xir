@@ -209,7 +209,7 @@
   )
 
 (define-fun MAX_f64 ((x f64) (y f64)) f64
-  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isNegative x) (fp.isNegative y)))
+  (ite (and (fp.isZero x) (fp.eq x y) (or (fp.isPositive x) (fp.isPositive y)))
        (_ +zero 11 53)
        (fp.max x y)
        )
