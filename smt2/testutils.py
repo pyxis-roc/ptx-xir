@@ -97,7 +97,10 @@ WRITERS = {'u16': lambda x: str(int(x)),
 def write_custom_test_cases(fmt, outfile, results):
     with open(outfile, "w") as f:
         for r in results:
-            out = [WRITERS[f](rr) for f, rr in zip(fmt, r)]
+            if len(fmt) == 1:
+                out = [WRITERS[fmt[0]](r)]
+            else:
+                out = [WRITERS[f](rr) for f, rr in zip(fmt, r)]
             f.write(" ".join(out) + "\n")
 
 def encode_test_cases(fmt, testcases, encoder):

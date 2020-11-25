@@ -150,7 +150,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     #TODO: needs to be in PTX Instruction Info
 
     # note: cc_reg flag is not really observable, so don't output it?
-    if len(pii.output_types) == 1: # or (len(pii.output_types) == 2 and needs_cc):
+    if len(pii.output_types) == 1 and (pii.output_types[0] != 'pred'): # or (len(pii.output_types) == 2 and needs_cc):
         # homogeneous output
         template['writer'] = f"write_{pii.output_types[0]}_test_cases"
         template['writer_args'] = "(args.output, results)"
@@ -168,7 +168,7 @@ def gen_test_case(dpii, insn, fdef, deriv_pii = None):
     fmt_str = str(tuple(cpii.arg_types))
     template['fmt_str'] = fmt_str
 
-    if cpii.is_homogeneous():
+    if cpii.is_homogeneous() and cpii.arg_types[0] != 'pred':
         input_ty = cpii.arg_types[0]
         template['reader'] = f"read_{input_ty}_test_cases"
         template['reader_args'] = f"(args.input, NARGS)"
