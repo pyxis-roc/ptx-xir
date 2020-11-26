@@ -252,3 +252,33 @@ static inline float fmaxf_ptx(float a, float b) {
 
   return res;
 }
+
+static inline double fmin_ptx(double a, double b) {
+  double res;
+  res = fmin(a, b);
+
+  // ptx requires +0.0 > -0.0
+  if((res == 0.0) && (a == b)) {
+    if(signbit(a))
+      return a;
+    else
+      return b;
+  }
+
+  return res;
+}
+
+static inline double fmax_ptx(double a, double b) {
+  double res;
+  res = fmax(a, b);
+
+  // ptx requires +0.0 > -0.0
+  if((res == 0.0) && (a == b)) {
+    if(signbit(a))
+      return b;
+    else
+      return a;
+  }
+
+  return res;
+}

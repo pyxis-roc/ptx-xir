@@ -49,8 +49,8 @@ inst MAX MAX_u64 Ti=uint64_t
 # name  colon-separate-macro-args  template-arg-whose-values-form-the-type-name  controlling expression
 generic MAX X:Y Ti X
 
-inst MIN MIN_f32 Ti=float
-inst MIN MIN_f64 Ti=double
+#inst MIN MIN_f32 Ti=float
+#inst MIN MIN_f64 Ti=double
 
 inst MIN MIN_s16 Ti=int16_t
 inst MIN MIN_s32 Ti=int32_t
