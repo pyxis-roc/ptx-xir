@@ -6,7 +6,6 @@
 
 import argparse
 import sys
-import extract_ex_semantics
 import re
 import shutil
 import pathlib
@@ -225,7 +224,7 @@ def write_tests(tests, outputdir, srcpath, semantics):
                           ptx_semantics = ptx.__file__,
                           filter_cc_reg = True)
 
-    for support in ['smt2ast.py', 'testutils.py', 'testutils_smt2.py', 'ignore_spec_smt2.txt']:
+    for support in ['testutils.py', 'testutils_smt2.py', 'ignore_spec_smt2.txt']:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
 
