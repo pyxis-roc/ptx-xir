@@ -153,7 +153,10 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     return call, "\n".join(driver_func_defn) + "\n}\n"
 
 def load_declarations(srcfile, headers):
-    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}", "-DPYCPARSER", "-D__STDC_VERSION__=199901L"])
+    src = pycparser.parse_file(srcfile, use_cpp=True, cpp_args=[f"-I{headers}",
+                                                                f"-I{pathlib.Path(__file__).parent}",
+                                                                f"-I{pathlib.Path(srcfile).parent}",
+                                                                "-DPYCPARSER", "-D__STDC_VERSION__=199901L"])
     out = {}
 
     for d in src.ext: # should work in pycparse < 2.19
@@ -181,7 +184,7 @@ def gen_test_case(dpii, insn, fdecl):
 
     call, harness = write_ptx_harness(pii, insn, fdecl, template['output_type'], base_pii)
     template['test_call'] = call
-    template['header'] = args.header # GLOBAL!
+    template['header'] = pathlib.Path(args.header).name # GLOBAL!
 
     output = []
 
@@ -252,18 +255,22 @@ else
 PTXM_FLAGS=
 endif
 """)
-        f.write(f'libptxc.so: {sources[0]} lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -o $@\n\n')
+        f.write(f'libptxc.so: {sources[0].name} lop3_lut.h ptxc_utils_template.h readbyte_prmt.h 128types.h\n\tgcc -shared -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -o $@\n\n')
 
-        src = [x for x in sources if x != 'ptxc.c']
-
+        src = [x.name for x in sources if x.name != 'ptxc.c']
+        testdeps = '' # ' '.join(src) # TODO: add header dependencies?
         for t in tests:
-            f.write(f"{t}: {t}.c testutils.o {' '.join(src)}\n\tgcc -g -O3 -L. -Wl,-rpath,'$$ORIGIN' $^ -lptxc -lm -o $@\n\n")
+            f.write(f"{t}: {t}.c testutils.o {testdeps}\n\tgcc -g -O3 -L. -Wl,-rpath,'$$ORIGIN' $^ -lptxc -lm -o $@\n\n")
 
         f.write(".PHONY: clean\n")
         f.write(f"clean:\n\trm -f libptxc.so {OBJS}\n")
 
-    # copy files
-    for support in sources + supportfiles + ['ignore_spec_c.txt']:
+    # copy files from build directory
+    for gen in sources:
+        shutil.copyfile(gen, dst / gen.name)
+
+    # copy files from source directory
+    for support in supportfiles + ['ignore_spec_c.txt']:
         print(f"Copying {srcpath / support} to {dst / support}")
         shutil.copyfile(srcpath / support, dst / support)
 
@@ -284,8 +291,14 @@ def main(args):
 
     total, tests = gen_all_tests(pii, decls)
     print(f"Generated {total} tests. Writing ...")
+
+    gensources = ['lop3_lut.h', 'ptxc_utils_template.h', 'readbyte_prmt.h']
+    srcpath = pathlib.Path(args.source).parent
+    gensources = [srcpath / s for s in gensources]
+
     write_tests(tests, args.testcasedir, pathlib.Path(__file__).parent,
-                [args.source], [args.header, 'ptxc_utils.h', 'lop3_lut.h', 'ptxc_utils_template.h', 'readbyte_prmt.h', '128types.h'])
+                [pathlib.Path(args.source), pathlib.Path(args.header)] + gensources,
+                ['ptxc_utils.h', '128types.h'])
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description='Create test cases for PTX instructions semantics compiled to C')
