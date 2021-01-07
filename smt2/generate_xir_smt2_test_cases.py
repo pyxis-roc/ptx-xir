@@ -14,10 +14,10 @@ import yaml
 from gpusemtest.isa import ptx
 from gpusemtest.utils.testinfo import InstructionTest, write_all_tests
 from gpusemtest.utils.metadata import write_static_metadata
-import smt2ast
+import xlatir.smt2ast as smt2ast
 
 PROLOGUE = """#!/usr/bin/env python3
-from smt2ast import *
+from xlatir.smt2ast import *
 import testutils
 import testutils_smt2
 import sys

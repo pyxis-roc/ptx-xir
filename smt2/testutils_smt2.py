@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import smt2ast
+import xlatir.smt2ast as smt2ast
 import subprocess
 import os
 import tempfile
