@@ -8,6 +8,8 @@ $(TARGET)/c:
 $(TARGET)/smt2:
 	mkdir -p $@
 
+.PHONY: c smt2
+
 c:
 	$(MAKE) -C c TARGET=../$(TARGET)/c
 
