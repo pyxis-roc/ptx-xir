@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, double, CFP, int32_t, int64_t, int16_t
+from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, uint8_t, double, CFP, int32_t, int64_t, int16_t
 
 class PTXLibC(XIRLib):
     type_dict = dict(SINGLETONS)
@@ -28,6 +28,15 @@ class PTXLibC(XIRLib):
         return "fmin_ptx"
 
     @MIN.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return "MIN"
+
+    # TODO: get rid of this and replace it with MIN
+    @singledispatchmethod
+    def min(self, aty, bty):
+        raise NotImplementedError(f"min({aty}, {bty}) not implemented.")
+
+    @min.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
         return "MIN"
 
@@ -399,6 +408,29 @@ class PTXLibC(XIRLib):
     def _(self, aty: CFP, bty: CFP):
         return '()' # for type checking only?
 
+    @singledispatchmethod
+    def ADD_SATURATE(self, aty, bty):
+        raise NotImplementedError(f'ADD_SATURATE({aty}, {bty}) not implemented.')
+
+    @ADD_SATURATE.register(int32_t)
+    def ADD_SATURATE(self, aty: int32_t, bty: int32_t):
+        return 'ADD_SATURATE_s32'
+
+    @singledispatchmethod
+    def SUB_SATURATE(self, aty, bty):
+        raise NotImplementedError(f'SUB_SATURATE({aty}, {bty}) not implemented.')
+
+    @SUB_SATURATE.register(int32_t)
+    def SUB_SATURATE(self, aty: int32_t, bty: int32_t):
+        return 'SUB_SATURATE_s32'
+
+    @singledispatchmethod
+    def logical_op3(self, aty, bty, cty, imm):
+        raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}')
+
+    @logical_op3.register(uint32_t)
+    def _(self, aty: uint32_t, bty: uint32_t, cty: uint32_t, imm: uint8_t):
+        return 'logical_op3'
 
 def get_libs(backend):
     assert backend == "c", f"Don't support backend {backend} for ptxlibc"
