@@ -303,7 +303,101 @@ class PTXLibC(XIRLib):
     def _(self, aty: CInteger):
         return 'uint16_t'
 
+    @singledispatchmethod
+    def compare_eq(self, aty, bty):
+        raise NotImplementedError(f"compare_eq({aty}, {bty}) not implemented.")
 
+    @compare_eq.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '=='
+
+    @singledispatchmethod
+    def compare_ne(self, aty, bty):
+        raise NotImplementedError(f"compare_ne({aty}, {bty}) not implemented.")
+
+    @compare_ne.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '!='
+
+    @singledispatchmethod
+    def compare_lt(self, aty, bty):
+        raise NotImplementedError(f"compare_lt({aty}, {bty}) not implemented.")
+
+    @compare_lt.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '<'
+
+    @singledispatchmethod
+    def compare_le(self, aty, bty):
+        raise NotImplementedError(f"compare_le({aty}, {bty}) not implemented.")
+
+    @compare_le.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '<='
+
+    @singledispatchmethod
+    def compare_gt(self, aty, bty):
+        raise NotImplementedError(f"compare_gt({aty}, {bty}) not implemented.")
+
+    @compare_gt.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '>'
+
+    @singledispatchmethod
+    def compare_ge(self, aty, bty):
+        raise NotImplementedError(f"compare_ge({aty}, {bty}) not implemented.")
+
+    @compare_ge.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return '>='
+
+    @singledispatchmethod
+    def compare_lo(self, aty, bty):
+        raise NotImplementedError(f"compare_lo({aty}, {bty}) not implemented.")
+
+    @compare_lo.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: CUnsigned):
+        return '<'
+
+    @singledispatchmethod
+    def compare_ls(self, aty, bty):
+        raise NotImplementedError(f"compare_ls({aty}, {bty}) not implemented.")
+
+    @compare_ls.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: CUnsigned):
+        return '<='
+
+    @singledispatchmethod
+    def compare_hi(self, aty, bty):
+        raise NotImplementedError(f"compare_hi({aty}, {bty}) not implemented.")
+
+    @compare_hi.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: CUnsigned):
+        return '>'
+
+    @singledispatchmethod
+    def compare_hs(self, aty, bty):
+        raise NotImplementedError(f"compare_hs({aty}, {bty}) not implemented.")
+
+    @compare_hs.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: CUnsigned):
+        return '>='
+
+    @singledispatchmethod
+    def compare_num(self, aty, bty):
+        raise NotImplementedError(f"compare_num({aty}, {bty}) not implemented.")
+
+    @compare_num.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return '()' # for type checking only
+
+    @singledispatchmethod
+    def compare_nan(self, aty, bty):
+        raise NotImplementedError(f"compare_nan({aty}, {bty}) not implemented.")
+
+    @compare_nan.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return '()' # for type checking only?
 
 
 def get_libs(backend):
