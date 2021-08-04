@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, uint32_t, double, CFP, int32_t, int64_t, int16_t
+from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, double, CFP, int32_t, int64_t, int16_t
 
 class PTXLibC(XIRLib):
     type_dict = dict(SINGLETONS)
@@ -221,6 +221,90 @@ class PTXLibC(XIRLib):
     @SQRT_ROUND.register(CFP)
     def _(self, aty: CFP, rty: str):
         return "SQRT_ROUND"
+
+    @singledispatchmethod
+    def MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned(self, aty):
+        raise NotImplementedError(f"MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned({aty}) not implemented")
+
+    @MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned.register(CUnsigned)
+    def _(self, aty: CUnsigned):
+        return ''
+
+    @singledispatchmethod
+    def MACHINE_SPECIFIC_execute_rem_divide_by_neg(self, aty, bty):
+        raise NotImplementedError(f"MACHINE_SPECIFIC_execute_rem_divide_by_neg({aty}, {bty}) not implemented")
+
+    # should be CInteger?/CSigned?
+    @MACHINE_SPECIFIC_execute_rem_divide_by_neg.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return 'MACHINE_SPECIFIC_execute_rem_divide_by_neg'
+
+    @singledispatchmethod
+    def MACHINE_SPECIFIC_execute_div_divide_by_zero_integer(self, aty):
+        raise NotImplementedError(f"MACHINE_SPECIFIC_execute_div_divide_by_zero_integer({aty}) not implemented")
+
+    @MACHINE_SPECIFIC_execute_div_divide_by_zero_integer.register(CInteger)
+    def _(self, aty: CInteger):
+        return ''
+
+    @singledispatchmethod
+    def zext_64(self, aty):
+        raise NotImplementedError(f"zext_64({aty}) not implemented.")
+
+    @zext_64.register(CInteger)
+    def _(self, aty: uint64_t):
+        return 'uint64_t'
+
+    @singledispatchmethod
+    def sext_64(self, aty):
+        raise NotImplementedError(f"sext_64({aty}) not implemented.")
+
+    @sext_64.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'int64_t'
+
+    @singledispatchmethod
+    def sext_32(self, aty):
+        raise NotImplementedError(f"sext_32({aty}) not implemented.")
+
+    @sext_32.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'int32_t'
+
+    @singledispatchmethod
+    def sext_16(self, aty):
+        raise NotImplementedError(f"sext_16({aty}) not implemented.")
+
+    @sext_16.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'int16_t'
+
+    @singledispatchmethod
+    def truncate_64(self, aty):
+        raise NotImplementedError(f"truncate_64({aty}) not implemented.")
+
+    @truncate_64.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'uint64_t'
+
+    @singledispatchmethod
+    def truncate_32(self, aty):
+        raise NotImplementedError(f"truncate_32({aty}) not implemented.")
+
+    @truncate_32.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'uint32_t'
+
+    @singledispatchmethod
+    def truncate_16(self, aty):
+        raise NotImplementedError(f"truncate_16({aty}) not implemented.")
+
+    @truncate_16.register(CInteger)
+    def _(self, aty: CInteger):
+        return 'uint16_t'
+
+
+
 
 def get_libs(backend):
     assert backend == "c", f"Don't support backend {backend} for ptxlibc"
