@@ -5,8 +5,9 @@ except ImportError:
 
 from xlatir.xir.xirlib import XIRLib
 from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, uint8_t, double, CFP, int32_t, int64_t, int16_t
+from ptxlib import PTXLib
 
-class PTXLibC(XIRLib):
+class PTXLibC(PTXLib):
     type_dict = dict(SINGLETONS)
 
     def __init__(self):
