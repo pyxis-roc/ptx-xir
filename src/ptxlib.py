@@ -34,8 +34,8 @@ class PTXLib(XIRLib):
     def COSINE(self, aty):
         raise NotImplementedError(f"COSINE({aty}) not implemented.")
 
-    def COPYSIGN(self, aty):
-        raise NotImplementedError(f"COPYSIGN({aty}) not implemented.")
+    def COPYSIGN(self, aty, bty):
+        raise NotImplementedError(f"COPYSIGN({aty}, {bty}) not implemented.")
 
     def SQRT(self, aty):
         raise NotImplementedError(f"SQRT({aty}) not implemented.")

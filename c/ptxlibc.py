@@ -162,13 +162,13 @@ class PTXLibC(PTXLib):
         return FnCall("COSINE", 1)
 
     @singledispatchmethod
-    def COPYSIGN(self, aty):
-        raise NotImplementedError(f"COPYSIGN({aty}) not implemented.")
+    def COPYSIGN(self, aty, bty):
+        raise NotImplementedError(f"COPYSIGN({aty}, {bty}) not implemented.")
 
     # use CFP since C files use _Generic to dispatch
     @COPYSIGN.register(CFP)
-    def _(self, aty: CFP):
-        return FnCall("COPYSIGN", 1)
+    def _(self, aty: CFP, bty: CFP):
+        return FnCall("COPYSIGN", 2)
 
     @singledispatchmethod
     def SQRT(self, aty):
@@ -176,7 +176,7 @@ class PTXLibC(PTXLib):
 
     @SQRT.register(c_float)
     def _(self, aty: c_float):
-        return FnCall("sqrtf", 1)
+        return FnCall("SQRT", 1) # so we can call ptxm_sqrt
 
     @SQRT.register(double)
     def _(self, aty: double):
