@@ -13,6 +13,15 @@ class PTXLib(XIRLib):
     def SAR(self, aty, bty):
         raise NotImplementedError(f"SAR({aty}, {bty}) not implemented.")
 
+    def SHL_LIT(self, aty, bty):
+        raise NotImplementedError(f"SHL_LIT({aty}, {bty}) not implemented.")
+
+    def SHR_LIT(self, aty, bty):
+        raise NotImplementedError(f"SHR_LIT({aty}, {bty}) not implemented.")
+
+    def SAR_LIT(self, aty, bty):
+        raise NotImplementedError(f"SAR_LIT({aty}, {bty}) not implemented.")
+
     def LOG2(self, aty):
         raise NotImplementedError(f"LOG2({aty}) not implemented.")
 
@@ -94,20 +103,38 @@ class PTXLib(XIRLib):
     def compare_eq(self, aty, bty):
         raise NotImplementedError(f"compare_eq({aty}, {bty}) not implemented.")
 
+    def compare_equ(self, aty, bty):
+        raise NotImplementedError(f"compare_equ({aty}, {bty}) not implemented.")
+
     def compare_ne(self, aty, bty):
         raise NotImplementedError(f"compare_ne({aty}, {bty}) not implemented.")
+
+    def compare_neu(self, aty, bty):
+        raise NotImplementedError(f"compare_neu({aty}, {bty}) not implemented.")
 
     def compare_lt(self, aty, bty):
         raise NotImplementedError(f"compare_lt({aty}, {bty}) not implemented.")
 
+    def compare_ltu(self, aty, bty):
+        raise NotImplementedError(f"compare_ltu({aty}, {bty}) not implemented.")
+
     def compare_le(self, aty, bty):
         raise NotImplementedError(f"compare_le({aty}, {bty}) not implemented.")
+
+    def compare_leu(self, aty, bty):
+        raise NotImplementedError(f"compare_leu({aty}, {bty}) not implemented.")
 
     def compare_gt(self, aty, bty):
         raise NotImplementedError(f"compare_gt({aty}, {bty}) not implemented.")
 
+    def compare_gtu(self, aty, bty):
+        raise NotImplementedError(f"compare_gtu({aty}, {bty}) not implemented.")
+
     def compare_ge(self, aty, bty):
         raise NotImplementedError(f"compare_ge({aty}, {bty}) not implemented.")
+
+    def compare_geu(self, aty, bty):
+        raise NotImplementedError(f"compare_geu({aty}, {bty}) not implemented.")
 
     def compare_lo(self, aty, bty):
         raise NotImplementedError(f"compare_lo({aty}, {bty}) not implemented.")

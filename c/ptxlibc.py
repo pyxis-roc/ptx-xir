@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, uint8_t, double, CFP, int32_t, int64_t, int16_t
+from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, uint8_t, double, CFP, int32_t, int64_t, int16_t, BinOpInfix, UnOpPrefix, FnCall, CastOp
 from ptxlib import PTXLib
 
 class PTXLibC(PTXLib):
@@ -22,15 +22,15 @@ class PTXLibC(PTXLib):
 
     @MIN.register(c_float)
     def _(self, aty: c_float, bty: c_float):
-        return "fminf_ptx"
+        return FnCall("fminf_ptx", 2)
 
     @MIN.register(double)
     def _(self, aty: double, bty: double):
-        return "fmin_ptx"
+        return FnCall("fmin_ptx", 2)
 
     @MIN.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return "MIN"
+        return FnCall("MIN", 2)
 
     # TODO: get rid of this and replace it with MIN
     @singledispatchmethod
@@ -39,7 +39,7 @@ class PTXLibC(PTXLib):
 
     @min.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return "MIN"
+        return FnCall("MIN", 2)
 
     @singledispatchmethod
     def MAX(self, aty, bty):
@@ -47,15 +47,15 @@ class PTXLibC(PTXLib):
 
     @MAX.register(c_float)
     def _(self, aty: c_float, bty: c_float):
-        return "fmaxf_ptx"
+        return FnCall("fmaxf_ptx", 2)
 
     @MAX.register(double)
     def _(self, aty: double, bty: double):
-        return "fmax_ptx"
+        return FnCall("fmax_ptx", 2)
 
     @MAX.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return "MAX"
+        return FnCall("MAX", 2)
 
     @singledispatchmethod
     def SAR(self, aty, bty):
@@ -66,14 +66,49 @@ class PTXLibC(PTXLib):
         # dispatch on second argument doesn't quite mimic '*', '*'
         # TODO: eliminate >>?
         if isinstance(bty, uint32_t):
-            return "SHR"
+            return FnCall("SHR", 2)
         else:
-            return ">>"
+            return BinOpInfix(">>")
 
     # this mimics the original dictionary, but makes little sense?
     @SAR.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return ">>"
+        return BinOpInfix(">>")
+
+    SAR_LIT = SAR
+
+    @singledispatchmethod
+    def SHR_LIT(self, aty, bty):
+        raise NotImplementedError(f"SHR_LIT({aty}, {bty}) not implemented.")
+
+    @SHR_LIT.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: uint32_t):
+        # does the same as SHR, though why?
+        if isinstance(bty, uint32_t):
+            return FnCall("SHR", 2)
+        else:
+            return BinOpInfix(">>")
+
+    @SHR_LIT.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return BinOpInfix(">>")
+
+    @singledispatchmethod
+    def SHL_LIT(self, aty, bty):
+        raise NotImplementedError(f"SHL_LIT({aty}, {bty}) not implemented.")
+
+    @SHL_LIT.register(CUnsigned)
+    def _(self, aty: CUnsigned, bty: uint32_t):
+        # dispatch on second argument doesn't quite mimic '*', '*'
+        # TODO: eliminate >>?
+        if isinstance(bty, uint32_t):
+            return FnCall("SHL", 2)
+        else:
+            return BinOpInfix("<<")
+
+    @SHL_LIT.register(CBasicType)
+    def _(self, aty: CBasicType, bty: CBasicType):
+        return BinOpInfix("<<")
 
     @singledispatchmethod
     def LOG2(self, aty):
@@ -82,7 +117,7 @@ class PTXLibC(PTXLib):
     # use CFP since C files use _Generic to dispatch
     @LOG2.register(CFP)
     def _(self, aty: CFP):
-        return "LOG2"
+        return FnCall("LOG2", 1)
 
     @singledispatchmethod
     def FTZ(self, aty):
@@ -91,7 +126,7 @@ class PTXLibC(PTXLib):
     # use CFP since C files use _Generic to dispatch
     @FTZ.register(CFP)
     def _(self, aty: CFP):
-        return "FTZ"
+        return FnCall("FTZ", 1)
 
     @singledispatchmethod
     def SINE(self, aty):
@@ -100,7 +135,7 @@ class PTXLibC(PTXLib):
     # use CFP since C files use _Generic to dispatch
     @SINE.register(CFP)
     def _(self, aty: CFP):
-        return "SINE"
+        return FnCall("SINE", 1)
 
     @singledispatchmethod
     def COSINE(self, aty):
@@ -109,7 +144,7 @@ class PTXLibC(PTXLib):
     # use CFP since C files use _Generic to dispatch
     @COSINE.register(CFP)
     def _(self, aty: CFP):
-        return "COSINE"
+        return FnCall("COSINE", 1)
 
     @singledispatchmethod
     def COPYSIGN(self, aty):
@@ -118,7 +153,7 @@ class PTXLibC(PTXLib):
     # use CFP since C files use _Generic to dispatch
     @COPYSIGN.register(CFP)
     def _(self, aty: CFP):
-        return "COPYSIGN"
+        return FnCall("COPYSIGN", 1)
 
     @singledispatchmethod
     def SQRT(self, aty):
@@ -126,11 +161,11 @@ class PTXLibC(PTXLib):
 
     @SQRT.register(c_float)
     def _(self, aty: c_float):
-        return "sqrtf"
+        return FnCall("sqrtf", 1)
 
     @SQRT.register(double)
     def _(self, aty: double):
-        return "sqrt"
+        return FnCall("sqrt", 1)
 
     @singledispatchmethod
     def ABSOLUTE(self, aty):
@@ -138,23 +173,23 @@ class PTXLibC(PTXLib):
 
     @ABSOLUTE.register(c_float)
     def _(self, aty: c_float):
-        return "fabsf"
+        return FnCall("fabsf", 1)
 
     @ABSOLUTE.register(double)
     def _(self, aty: double):
-        return "fabs"
+        return FnCall("fabs", 1)
 
     @ABSOLUTE.register(int32_t)
     def _(self, aty: int32_t):
-        return "abs"
+        return FnCall("abs", 1)
 
     @ABSOLUTE.register(int64_t)
     def _(self, aty: int64_t):
-        return "labs" # depends on 64-bit model!
+        return FnCall("labs", 1) # depends on 64-bit model!
 
     @ABSOLUTE.register(int16_t)
     def _(self, aty: int16_t):
-        return "abs"
+        return FnCall("abs", 1)
 
     @singledispatchmethod
     def POW(self, aty, bty):
@@ -162,11 +197,11 @@ class PTXLibC(PTXLib):
 
     @POW.register(c_float)
     def _(self, aty: c_float, bty: c_float):
-        return "powf"
+        return FnCall("powf", 2)
 
     @POW.register(double)
     def _(self, aty: double, bty: double):
-        return "pow"
+        return FnCall("pow", 2)
 
     @singledispatchmethod
     def FMA(self, aty, bty, cty):
@@ -174,7 +209,7 @@ class PTXLibC(PTXLib):
 
     @FMA.register(CFP)
     def _(self, aty: CFP, bty: CFP, cty: CFP):
-        return "FMA"
+        return FnCall("FMA", 3)
 
     @singledispatchmethod
     def ADD_ROUND(self, aty, bty, rty):
@@ -182,7 +217,7 @@ class PTXLibC(PTXLib):
 
     @ADD_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return "ADD_ROUND"
+        return FnCall("ADD_ROUND", 3)
 
     @singledispatchmethod
     def MUL_ROUND(self, aty, bty, rty):
@@ -190,7 +225,7 @@ class PTXLibC(PTXLib):
 
     @MUL_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return "MUL_ROUND"
+        return FnCall("MUL_ROUND", 3)
 
     @singledispatchmethod
     def SUB_ROUND(self, aty, bty, rty):
@@ -198,7 +233,7 @@ class PTXLibC(PTXLib):
 
     @SUB_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return "SUB_ROUND"
+        return FnCall("SUB_ROUND", 3)
 
     @singledispatchmethod
     def DIV_ROUND(self, aty, bty, rty):
@@ -206,7 +241,7 @@ class PTXLibC(PTXLib):
 
     @DIV_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return "DIV_ROUND"
+        return FnCall("DIV_ROUND", 3)
 
     @singledispatchmethod
     def FMA_ROUND(self, aty, bty, cty, rty):
@@ -214,7 +249,7 @@ class PTXLibC(PTXLib):
 
     @FMA_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, cty: CFP, rty: str):
-        return "FMA_ROUND"
+        return FnCall("FMA_ROUND", 4)
 
     @singledispatchmethod
     def RCP_ROUND(self, aty, rty):
@@ -222,7 +257,7 @@ class PTXLibC(PTXLib):
 
     @RCP_ROUND.register(CFP)
     def _(self, aty: CFP, rty: str):
-        return "RCP_ROUND"
+        return FnCall("RCP_ROUND", 2)
 
     @singledispatchmethod
     def SQRT_ROUND(self, aty, rty):
@@ -230,7 +265,7 @@ class PTXLibC(PTXLib):
 
     @SQRT_ROUND.register(CFP)
     def _(self, aty: CFP, rty: str):
-        return "SQRT_ROUND"
+        return FnCall("SQRT_ROUND", 2)
 
     @singledispatchmethod
     def MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned(self, aty):
@@ -263,7 +298,7 @@ class PTXLibC(PTXLib):
 
     @zext_64.register(CInteger)
     def _(self, aty: uint64_t):
-        return 'uint64_t'
+        return CastOp('uint64_t')
 
     @singledispatchmethod
     def sext_64(self, aty):
@@ -271,7 +306,7 @@ class PTXLibC(PTXLib):
 
     @sext_64.register(CInteger)
     def _(self, aty: CInteger):
-        return 'int64_t'
+        return CastOp('int64_t')
 
     @singledispatchmethod
     def sext_32(self, aty):
@@ -279,7 +314,7 @@ class PTXLibC(PTXLib):
 
     @sext_32.register(CInteger)
     def _(self, aty: CInteger):
-        return 'int32_t'
+        return CastOp('int32_t')
 
     @singledispatchmethod
     def sext_16(self, aty):
@@ -287,7 +322,7 @@ class PTXLibC(PTXLib):
 
     @sext_16.register(CInteger)
     def _(self, aty: CInteger):
-        return 'int16_t'
+        return CastOp('int16_t')
 
     @singledispatchmethod
     def truncate_64(self, aty):
@@ -295,7 +330,7 @@ class PTXLibC(PTXLib):
 
     @truncate_64.register(CInteger)
     def _(self, aty: CInteger):
-        return 'uint64_t'
+        return CastOp('uint64_t')
 
     @singledispatchmethod
     def truncate_32(self, aty):
@@ -303,7 +338,7 @@ class PTXLibC(PTXLib):
 
     @truncate_32.register(CInteger)
     def _(self, aty: CInteger):
-        return 'uint32_t'
+        return CastOp('uint32_t')
 
     @singledispatchmethod
     def truncate_16(self, aty):
@@ -311,55 +346,136 @@ class PTXLibC(PTXLib):
 
     @truncate_16.register(CInteger)
     def _(self, aty: CInteger):
-        return 'uint16_t'
+        return CastOp('uint16_t')
+
+    def _float_cmp(self, fn):
+        tmp = fn(CBasicType(), CBasicType())
+        # TODO: paren
+        return lambda x, y: f"(!(isnan({x}) || isnan({y}))) && {tmp(x, y)}"
+
+    def _float_cmp_unordered(self, fn):
+        tmp = fn(CBasicType(), CBasicType())
+        return lambda x, y: f"isnan({x}) || isnan({y}) || {tmp(x, y)}"
 
     @singledispatchmethod
     def compare_eq(self, aty, bty):
         raise NotImplementedError(f"compare_eq({aty}, {bty}) not implemented.")
 
+    @compare_eq.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_eq)
+
     @compare_eq.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '=='
+        return BinOpInfix('==')
+
+    @singledispatchmethod
+    def compare_equ(self, aty, bty):
+        raise NotImplementedError(f"compare_equ({aty}, {bty}) not implemented.")
+
+    @compare_equ.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_eq)
 
     @singledispatchmethod
     def compare_ne(self, aty, bty):
         raise NotImplementedError(f"compare_ne({aty}, {bty}) not implemented.")
 
+    @compare_ne.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_ne)
+
     @compare_ne.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '!='
+        return BinOpInfix('!=')
+
+    @singledispatchmethod
+    def compare_neu(self, aty, bty):
+        raise NotImplementedError(f"compare_neu({aty}, {bty}) not implemented.")
+
+    @compare_neu.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_ne)
 
     @singledispatchmethod
     def compare_lt(self, aty, bty):
         raise NotImplementedError(f"compare_lt({aty}, {bty}) not implemented.")
 
+    @compare_lt.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_lt)
+
     @compare_lt.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '<'
+        return BinOpInfix('<')
+
+    @singledispatchmethod
+    def compare_ltu(self, aty, bty):
+        raise NotImplementedError(f"compare_ltu({aty}, {bty}) not implemented.")
+
+    @compare_ltu.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_lt)
 
     @singledispatchmethod
     def compare_le(self, aty, bty):
         raise NotImplementedError(f"compare_le({aty}, {bty}) not implemented.")
 
+    @compare_le.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_le)
+
     @compare_le.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '<='
+        return BinOpInfix('<=')
+
+    @singledispatchmethod
+    def compare_leu(self, aty, bty):
+        raise NotImplementedError(f"compare_leu({aty}, {bty}) not implemented.")
+
+    @compare_leu.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_le)
 
     @singledispatchmethod
     def compare_gt(self, aty, bty):
         raise NotImplementedError(f"compare_gt({aty}, {bty}) not implemented.")
 
+    @compare_gt.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_gt)
+
     @compare_gt.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '>'
+        return BinOpInfix('>')
+
+    @singledispatchmethod
+    def compare_gtu(self, aty, bty):
+        raise NotImplementedError(f"compare_gtu({aty}, {bty}) not implemented.")
+
+    @compare_gtu.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_gt)
 
     @singledispatchmethod
     def compare_ge(self, aty, bty):
         raise NotImplementedError(f"compare_ge({aty}, {bty}) not implemented.")
 
+    @compare_ge.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp(self.compare_ge)
+
     @compare_ge.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return '>='
+        return BinOpInfix('>=')
+
+    @singledispatchmethod
+    def compare_geu(self, aty, bty):
+        raise NotImplementedError(f"compare_geu({aty}, {bty}) not implemented.")
+
+    @compare_geu.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._float_cmp_unordered(self.compare_ge)
 
     @singledispatchmethod
     def compare_lo(self, aty, bty):
@@ -367,7 +483,7 @@ class PTXLibC(PTXLib):
 
     @compare_lo.register(CUnsigned)
     def _(self, aty: CUnsigned, bty: CUnsigned):
-        return '<'
+        return BinOpInfix('<')
 
     @singledispatchmethod
     def compare_ls(self, aty, bty):
@@ -375,7 +491,7 @@ class PTXLibC(PTXLib):
 
     @compare_ls.register(CUnsigned)
     def _(self, aty: CUnsigned, bty: CUnsigned):
-        return '<='
+        return BinOpInfix('<=')
 
     @singledispatchmethod
     def compare_hi(self, aty, bty):
@@ -383,7 +499,7 @@ class PTXLibC(PTXLib):
 
     @compare_hi.register(CUnsigned)
     def _(self, aty: CUnsigned, bty: CUnsigned):
-        return '>'
+        return BinOpInfix('>')
 
     @singledispatchmethod
     def compare_hs(self, aty, bty):
@@ -391,7 +507,7 @@ class PTXLibC(PTXLib):
 
     @compare_hs.register(CUnsigned)
     def _(self, aty: CUnsigned, bty: CUnsigned):
-        return '>='
+        return BinOpInfix('>=')
 
     @singledispatchmethod
     def compare_num(self, aty, bty):
@@ -399,7 +515,7 @@ class PTXLibC(PTXLib):
 
     @compare_num.register(CFP)
     def _(self, aty: CFP, bty: CFP):
-        return '()' # for type checking only
+        return lambda x, y: f"!(isnan({x}) || isnan({y}))"
 
     @singledispatchmethod
     def compare_nan(self, aty, bty):
@@ -407,7 +523,7 @@ class PTXLibC(PTXLib):
 
     @compare_nan.register(CFP)
     def _(self, aty: CFP, bty: CFP):
-        return '()' # for type checking only?
+        return lambda x, y: f"(isnan({x}) || isnan({y}))"
 
     @singledispatchmethod
     def ADD_SATURATE(self, aty, bty):
@@ -415,7 +531,7 @@ class PTXLibC(PTXLib):
 
     @ADD_SATURATE.register(int32_t)
     def ADD_SATURATE(self, aty: int32_t, bty: int32_t):
-        return 'ADD_SATURATE_s32'
+        return FnCall('ADD_SATURATE_s32', 2)
 
     @singledispatchmethod
     def SUB_SATURATE(self, aty, bty):
@@ -423,7 +539,7 @@ class PTXLibC(PTXLib):
 
     @SUB_SATURATE.register(int32_t)
     def SUB_SATURATE(self, aty: int32_t, bty: int32_t):
-        return 'SUB_SATURATE_s32'
+        return FnCall('SUB_SATURATE_s32', 2)
 
     @singledispatchmethod
     def logical_op3(self, aty, bty, cty, imm):
@@ -431,7 +547,7 @@ class PTXLibC(PTXLib):
 
     @logical_op3.register(uint32_t)
     def _(self, aty: uint32_t, bty: uint32_t, cty: uint32_t, imm: uint8_t):
-        return 'logical_op3'
+        return FnCall('logical_op3', 4)
 
 def get_libs(backend):
     assert backend == "c", f"Don't support backend {backend} for ptxlibc"
