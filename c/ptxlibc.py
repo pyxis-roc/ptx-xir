@@ -288,7 +288,7 @@ class PTXLibC(PTXLib):
 
     @MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned.register(CUnsigned)
     def _(self, aty: CUnsigned):
-        return ''
+        return FnCall('', 1)
 
     @singledispatchmethod
     def MACHINE_SPECIFIC_execute_rem_divide_by_neg(self, aty, bty):
@@ -297,7 +297,7 @@ class PTXLibC(PTXLib):
     # should be CInteger?/CSigned?
     @MACHINE_SPECIFIC_execute_rem_divide_by_neg.register(CBasicType)
     def _(self, aty: CBasicType, bty: CBasicType):
-        return 'MACHINE_SPECIFIC_execute_rem_divide_by_neg'
+        return FnCall('MACHINE_SPECIFIC_execute_rem_divide_by_neg', 2)
 
     @singledispatchmethod
     def MACHINE_SPECIFIC_execute_div_divide_by_zero_integer(self, aty):
@@ -305,7 +305,13 @@ class PTXLibC(PTXLib):
 
     @MACHINE_SPECIFIC_execute_div_divide_by_zero_integer.register(CInteger)
     def _(self, aty: CInteger):
-        return ''
+        atyn = aty.__class__.__name__
+
+        # returned the negated unsigned 0
+        if isinstance(aty, CUnsigned):
+            return lambda _: f"~(({atyn}) 0)"
+        else:
+            return lambda _: f"~((u{atyn}) 0)"
 
     @singledispatchmethod
     def zext_64(self, aty):
@@ -611,11 +617,27 @@ class PTXLibC(PTXLib):
 
     @singledispatchmethod
     def logical_op3(self, aty, bty, cty, imm):
-        raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}')
+        raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}) not implemented.')
 
     @logical_op3.register(uint32_t)
     def _(self, aty: uint32_t, bty: uint32_t, cty: uint32_t, imm: uint8_t):
         return FnCall('logical_op3', 4)
+
+    @singledispatchmethod
+    def ISNAN(self, aty):
+        raise NotImplementedError(f'ISNAN({aty}) not implemented.')
+
+    @ISNAN.register(CFP)
+    def _(self, aty: CFP):
+        return FnCall('isnan', 1)
+
+    @singledispatchmethod
+    def subnormal_check(self, aty):
+        raise NotImplementedError(f'subnormal_check({aty}) not implemented.')
+
+    @subnormal_check.register(CFP)
+    def _(self, aty: CFP):
+        return lambda a: f"(fpclassify({a}) == FP_SUBNORMAL)"
 
 def get_libs(backend):
     assert backend == "c", f"Don't support backend {backend} for ptxlibc"

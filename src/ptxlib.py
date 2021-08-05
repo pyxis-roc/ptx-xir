@@ -176,8 +176,13 @@ class PTXLib(XIRLib):
         raise NotImplementedError(f'FMA_ROUND_SATURATE({aty}, {bty}, {cty}, {rty}) not implemented.')
 
     def logical_op3(self, aty, bty, cty, imm):
-        raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}')
+        raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}) not implemented.')
 
+    def ISNAN(self, aty):
+        raise NotImplementedError(f'ISNAN({aty}) not implemented.')
+
+    def subnormal_check(self, aty):
+        raise NotImplementedError(f'subnormal_check({aty}) not implemented.')
 
 def get_libs(backend):
     # hack
