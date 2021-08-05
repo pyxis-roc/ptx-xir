@@ -7,6 +7,21 @@ from xlatir.xir.xirlib import XIRLib
 from xlatir.xir.xirlibc import CBasicType, c_float, SINGLETONS, CSigned, CUnsigned, CInteger, uint64_t, uint32_t, uint16_t, uint8_t, double, CFP, int32_t, int64_t, int16_t, BinOpInfix, UnOpPrefix, FnCall, CastOp
 from ptxlib import PTXLib
 
+ROUND_MODES = {'rp': 'FE_UPWARD',  # to positive infinity
+               'rn': 'FE_TONEAREST', # towards nearest even
+               'rz': 'FE_TOWARDZERO', # towards zero
+               'rm': 'FE_DOWNWARD'} # to negative infinity
+
+def RoundedFnCall(fn, nargs):
+    fnc = FnCall(fn, nargs)
+
+    def rfc(*args):
+        args = list(args)
+        args[-1] = ROUND_MODES[args[-1][1:-1]] # 'strconst'
+        return fnc(*args)
+
+    return rfc
+
 class PTXLibC(PTXLib):
     type_dict = dict(SINGLETONS)
 
@@ -217,7 +232,7 @@ class PTXLibC(PTXLib):
 
     @ADD_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return FnCall("ADD_ROUND", 3)
+        return RoundedFnCall("ADD_ROUND", 3)
 
     @singledispatchmethod
     def MUL_ROUND(self, aty, bty, rty):
@@ -225,7 +240,7 @@ class PTXLibC(PTXLib):
 
     @MUL_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return FnCall("MUL_ROUND", 3)
+        return RoundedFnCall("MUL_ROUND", 3)
 
     @singledispatchmethod
     def SUB_ROUND(self, aty, bty, rty):
@@ -233,7 +248,7 @@ class PTXLibC(PTXLib):
 
     @SUB_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return FnCall("SUB_ROUND", 3)
+        return RoundedFnCall("SUB_ROUND", 3)
 
     @singledispatchmethod
     def DIV_ROUND(self, aty, bty, rty):
@@ -241,7 +256,7 @@ class PTXLibC(PTXLib):
 
     @DIV_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, rty: str):
-        return FnCall("DIV_ROUND", 3)
+        return RoundedFnCall("DIV_ROUND", 3)
 
     @singledispatchmethod
     def FMA_ROUND(self, aty, bty, cty, rty):
@@ -249,7 +264,7 @@ class PTXLibC(PTXLib):
 
     @FMA_ROUND.register(CFP)
     def _(self, aty: CFP, bty: CFP, cty: CFP, rty: str):
-        return FnCall("FMA_ROUND", 4)
+        return RoundedFnCall("FMA_ROUND", 4)
 
     @singledispatchmethod
     def RCP_ROUND(self, aty, rty):
@@ -257,7 +272,7 @@ class PTXLibC(PTXLib):
 
     @RCP_ROUND.register(CFP)
     def _(self, aty: CFP, rty: str):
-        return FnCall("RCP_ROUND", 2)
+        return RoundedFnCall("RCP_ROUND", 2)
 
     @singledispatchmethod
     def SQRT_ROUND(self, aty, rty):
@@ -265,7 +280,7 @@ class PTXLibC(PTXLib):
 
     @SQRT_ROUND.register(CFP)
     def _(self, aty: CFP, rty: str):
-        return FnCall("SQRT_ROUND", 2)
+        return RoundedFnCall("SQRT_ROUND", 2)
 
     @singledispatchmethod
     def MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned(self, aty):
@@ -525,21 +540,74 @@ class PTXLibC(PTXLib):
     def _(self, aty: CFP, bty: CFP):
         return lambda x, y: f"(isnan({x}) || isnan({y}))"
 
+    def _fp_sat(self, fn):
+        return lambda *args: f"SATURATE({fn(*args)})"
+
     @singledispatchmethod
     def ADD_SATURATE(self, aty, bty):
         raise NotImplementedError(f'ADD_SATURATE({aty}, {bty}) not implemented.')
 
+    @ADD_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._fp_sat(BinOpInfix("+"))
+
     @ADD_SATURATE.register(int32_t)
-    def ADD_SATURATE(self, aty: int32_t, bty: int32_t):
+    def _(self, aty: int32_t, bty: int32_t):
         return FnCall('ADD_SATURATE_s32', 2)
 
     @singledispatchmethod
     def SUB_SATURATE(self, aty, bty):
         raise NotImplementedError(f'SUB_SATURATE({aty}, {bty}) not implemented.')
 
+    @SUB_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._fp_sat(BinOpInfix("-"))
+
     @SUB_SATURATE.register(int32_t)
-    def SUB_SATURATE(self, aty: int32_t, bty: int32_t):
+    def _(self, aty: int32_t, bty: int32_t):
         return FnCall('SUB_SATURATE_s32', 2)
+
+    @singledispatchmethod
+    def MUL_SATURATE(self, aty, bty):
+        raise NotImplementedError(f'MUL_SATURATE({aty}, {bty}) not implemented.')
+
+    @MUL_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP):
+        return self._fp_sat(BinOpInfix("*"))
+
+    # there is no integer version of mul saturate
+
+    @singledispatchmethod
+    def ADD_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'ADD_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    @ADD_ROUND_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP, rty: str):
+        return self._fp_sat(self.ADD_ROUND(aty, bty, rty))
+
+    @singledispatchmethod
+    def SUB_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'SUB_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    @SUB_ROUND_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP, rty: str):
+        return self._fp_sat(self.SUB_ROUND(aty, bty, rty))
+
+    @singledispatchmethod
+    def MUL_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'MUL_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    @MUL_ROUND_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP, rty: str):
+        return self._fp_sat(self.MUL_ROUND(aty, bty, rty))
+
+    @singledispatchmethod
+    def FMA_ROUND_SATURATE(self, aty, bty, cty, rty):
+        raise NotImplementedError(f'FMA_ROUND_SATURATE({aty}, {bty}, {cty}, {rty}) not implemented.')
+
+    @FMA_ROUND_SATURATE.register(CFP)
+    def _(self, aty: CFP, bty: CFP, cty: CFP, rty: str):
+        return self._fp_sat(self.FMA_ROUND(aty, bty, cty, rty))
 
     @singledispatchmethod
     def logical_op3(self, aty, bty, cty, imm):

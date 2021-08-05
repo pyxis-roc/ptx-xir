@@ -160,6 +160,21 @@ class PTXLib(XIRLib):
     def SUB_SATURATE(self, aty, bty):
         raise NotImplementedError(f'SUB_SATURATE({aty}, {bty}) not implemented.')
 
+    def MUL_SATURATE(self, aty, bty):
+        raise NotImplementedError(f'MUL_SATURATE({aty}, {bty}) not implemented.')
+
+    def ADD_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'ADD_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    def SUB_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'SUB_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    def MUL_ROUND_SATURATE(self, aty, bty, rty):
+        raise NotImplementedError(f'MUL_ROUND_SATURATE({aty}, {bty}, {rty}) not implemented.')
+
+    def FMA_ROUND_SATURATE(self, aty, bty, cty, rty):
+        raise NotImplementedError(f'FMA_ROUND_SATURATE({aty}, {bty}, {cty}, {rty}) not implemented.')
+
     def logical_op3(self, aty, bty, cty, imm):
         raise NotImplementedError(f'logical_op3({aty}, {bty}, {cty}, {imm}')
 
