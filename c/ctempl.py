@@ -21,7 +21,12 @@ class Instantiate(c_ast.NodeVisitor):
                 if isinstance(vty, c_ast.PtrDecl):
                     vty = vty.type
 
-                node.names = vty.type.names
+                if isinstance(vty.type, c_ast.Struct):
+                    # ugly hack that works, but really IdentifierType should be replaced
+                    # with a Struct, but since this is not a NodeTransformer ...
+                    node.names = ['struct', vty.type.name]
+                else:
+                    node.names = vty.type.names
 
     def visit_FuncDef(self, node):
         # there is only one Funcdef
@@ -128,7 +133,11 @@ def process_script(script, output, fakecheaders = '/usr/share/python-pycparser/f
             elif l.startswith("inst"):
                 # inst tmplfunc funcname tvar1=tval1:tvar2=tval2
                 inst = l.split()
+
+                if len(inst) > 4: # handle spaces in substitutions, e.g. for struct X
+                    inst[3] = ' '.join(inst[3:])
                 tvars = get_typedefs_for_tvars(inst[3].split(':'))
+
                 if inst[1] not in instantiations:
                     instantiations[inst[1]] = []
 
