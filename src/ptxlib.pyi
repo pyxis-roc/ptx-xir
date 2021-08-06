@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
-from typing import TypeVar
+from typing import TypeVar, Generic
 
 T = TypeVar('T')
 T1 = TypeVar('T1')
 T2 = TypeVar('T2')
 
 Tf = TypeVar('Tf') # intended to be restricted to floats
+
+class value_carry(Generic[T]):
+      value: T
+      overflow: carryflag
 
 RM = str # round mode, needs to be a literal string
 
@@ -31,9 +35,9 @@ def SUB_SATURATE(a: T, b: T) -> T: ...
 def MUL_SATURATE(a: T, b: T) -> T: ...
 def DIV_SATURATE(a: T, b: T) -> T: ...
 
-# CARRY_ARITH_FNS
-def ADD_CARRY(a: T, b: T, c: carryflag) -> (T, carryflag): ...
-def SUB_CARRY(a: T, b: T, c: carryflag) -> (T, carryflag): ...
+# CARRY_ARITH_FNS, deprecated
+def ADD_CARRY(a: T, b: T, c: carryflag) -> value_carry[T]: ...
+def SUB_CARRY(a: T, b: T, c: carryflag) -> value_carry[T]: ...
 
 # MACHINE_SPECIFIC_FNS
 def MACHINE_SPECIFIC_execute_rem_divide_by_zero_unsigned(a: T) -> T: ...

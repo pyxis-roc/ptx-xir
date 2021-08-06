@@ -15,6 +15,8 @@ class RewritePythonisms(ast.NodeTransformer):
     desugar_boolean_xor = True
     elim_x_value = False
 
+    _x_carry_varnames = None
+
     def _is_float_constant_constructor(self, n):
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'float':
             if isinstance(n.args[0], ast.Str):
@@ -64,6 +66,19 @@ class RewritePythonisms(ast.NodeTransformer):
         else:
             return node
 
+    def visit_Name(self, node):
+        if self._x_carry_varnames is not None:
+            try:
+                p = self._x_carry_varnames.index(node.id)
+                if p == 0:
+                    return ast.Attribute(value=node, attr='value')
+                elif p == 1:
+                    return ast.Attribute(value=ast.Name(id = self._x_carry_varnames[0], ctx=ast.Load()), attr='overflow')
+            except ValueError:
+                pass
+
+        return node
+
     def visit_Subscript(self, node):
         if isinstance(node.value, ast.Subscript):
             return self.cvt_machine_specific(node)
@@ -96,6 +111,11 @@ class RewritePythonisms(ast.NodeTransformer):
 
         node.func.id = node.func.id + ('_' + suffix if suffix else '')
         del node.args[argid]
+        self.generic_visit(node)
+        return node
+
+    def visit_FunctionDef(self, node):
+        self._x_carry_varnames = None
         self.generic_visit(node)
         return node
 
@@ -215,6 +235,15 @@ class RewritePythonisms(ast.NodeTransformer):
                                           value=None,
                                           simple=1),
                             ast.Expr(rhs)]
+                elif isinstance(node.value.func, ast.Name) and node.value.func.id.startswith('ADD_CARRY'):
+                    pass
+        elif len(node.targets) == 1 and isinstance(node.targets[0], ast.Tuple):
+            if isinstance(node.value.func, ast.Name) and node.value.func.id in ('ADD_CARRY', 'SUB_CARRY'):
+                # can only handle a single instance of ADD_CARRY/SUB_CARRY per function
+                if self._x_carry_varnames is None:
+                    self._x_carry_varnames = (node.targets[0].elts[0].id, node.targets[0].elts[1].id)
+                node.targets = [node.targets[0].elts[0]]
+                return node
 
         return node
 
@@ -222,6 +251,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Rewrite legacy Pythonisms in the PTX XIR")
     p.add_argument("input", help="Input file")
     p.add_argument("output", help="Output file")
+    p.add_argument("backend", choices=["c", "smt2"])
 
     args = p.parse_args()
 
@@ -230,7 +260,15 @@ if __name__ == "__main__":
 
     rp = RewritePythonisms()
     rp.elim_x_value = True
-    
+    rp.backend = args.backend
+
+    if args.backend == "c":
+        rp.elim_x_value = True
+        rp.desugar_boolean_xor = True
+    else:
+        rp.elim_x_value = True
+        rp.desugar_boolean_xor = False
+
     outast = rp.visit(inpast)
 
     with open(args.output, 'w') as f:

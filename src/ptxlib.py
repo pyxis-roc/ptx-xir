@@ -184,6 +184,12 @@ class PTXLib(XIRLib):
     def subnormal_check(self, aty):
         raise NotImplementedError(f'subnormal_check({aty}) not implemented.')
 
+    def ADD_CARRY(self, aty, bty, cfty):
+        raise NotImplementedError(f'ADD_CARRY({aty}, {bty}, {cfty} not implemented.')
+
+    def SUB_CARRY(self, aty, bty, cfty):
+        raise NotImplementedError(f'SUB_CARRY({aty}, {bty}, {cfty} not implemented.')
+
 def get_libs(backend):
     # hack
     return []

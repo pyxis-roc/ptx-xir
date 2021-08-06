@@ -27,6 +27,7 @@ class PTXLibC(PTXLib):
 
     def __init__(self):
         self.type_dict['str'] = str
+        self.type_dict['int'] = int # used for carryflag
 
     def get_dispatch_types(self, fnty, xirty):
         return [fnty[0]] + [self.type_dict[x] for x in fnty[1:]]
@@ -638,6 +639,22 @@ class PTXLibC(PTXLib):
     @subnormal_check.register(CFP)
     def _(self, aty: CFP):
         return lambda a: f"(fpclassify({a}) == FP_SUBNORMAL)"
+
+    @singledispatchmethod
+    def ADD_CARRY(self, aty, bty, cfty):
+        raise NotImplementedError(f'ADD_CARRY({aty}, {bty}, {cfty} not implemented.')
+
+    @ADD_CARRY.register(CInteger)
+    def _(self, aty: CInteger, bty: CInteger, cfty: int):
+        return FnCall("ADD_CARRY_STRUCT", 3)
+
+    @singledispatchmethod
+    def SUB_CARRY(self, aty, bty, cfty):
+        raise NotImplementedError(f'SUB_CARRY({aty}, {bty}, {cfty} not implemented.')
+
+    @SUB_CARRY.register(CInteger)
+    def _(self, aty: CInteger, bty: CInteger, cfty: int):
+        return FnCall("SUB_CARRY_STRUCT", 3)
 
 def get_libs(backend):
     assert backend == "c", f"Don't support backend {backend} for ptxlibc"

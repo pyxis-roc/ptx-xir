@@ -117,6 +117,15 @@ inst ADD_CARRY ADD_CARRY_u64 Ti=uint64_t:Tui=uint64_t
 inst ADD_CARRY ADD_CARRY_s64 Ti=int64_t:Tui=uint64_t
 generic ADD_CARRY W:X:Y:Z Ti W
 
+#inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_u16 Ti=uint16_t:Tui=uint16_t:Ts=struct value_carry_u16
+#inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_s16 Ti=int16_t:Tui=uint16_t:Ts=struct value_carry_s16
+inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_u32 Ti=uint32_t:Tui=uint32_t:Ts=struct value_carry_u32
+inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_s32 Ti=int32_t:Tui=uint32_t:Ts=struct value_carry_s32
+inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_u64 Ti=uint64_t:Tui=uint64_t:Ts=struct value_carry_u64
+inst ADD_CARRY_STRUCT ADD_CARRY_STRUCT_s64 Ti=int64_t:Tui=uint64_t:Ts=struct value_carry_s64
+generic ADD_CARRY_STRUCT W:X:Y Ti W
+
+
 inst SUB_CARRY SUB_CARRY_u16 Ti=uint16_t:Tui=uint16_t
 inst SUB_CARRY SUB_CARRY_s16 Ti=int16_t:Tui=uint16_t
 inst SUB_CARRY SUB_CARRY_u32 Ti=uint32_t:Tui=uint32_t
@@ -124,6 +133,15 @@ inst SUB_CARRY SUB_CARRY_s32 Ti=int32_t:Tui=uint32_t
 inst SUB_CARRY SUB_CARRY_u64 Ti=uint64_t:Tui=uint64_t
 inst SUB_CARRY SUB_CARRY_s64 Ti=int64_t:Tui=uint64_t
 generic SUB_CARRY W:X:Y:Z Ti W
+
+#inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_u16 Ti=uint16_t:Tui=uint16_t:Ts=struct value_carry_u16
+#inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_s16 Ti=int16_t:Tui=uint16_t:Ts=struct value_carry_s16
+inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_u32 Ti=uint32_t:Tui=uint32_t:Ts=struct value_carry_u32
+inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_s32 Ti=int32_t:Tui=uint32_t:Ts=struct value_carry_s32
+inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_u64 Ti=uint64_t:Tui=uint64_t:Ts=struct value_carry_u64
+inst SUB_CARRY_STRUCT SUB_CARRY_STRUCT_s64 Ti=int64_t:Tui=uint64_t:Ts=struct value_carry_s64
+generic SUB_CARRY_STRUCT W:X:Y Ti W
+
 
 inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s16 Ti=int16_t
 inst MACHINE_SPECIFIC_execute_rem_divide_by_neg MACHINE_SPECIFIC_execute_rem_divide_by_neg_s32 Ti=int32_t
