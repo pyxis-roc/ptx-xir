@@ -48,6 +48,10 @@ def generic_round(fn, nargs):
     else:
         raise NotImplementedError(f"nargs={nargs} not implemented")
 
+def truncate(width):
+    return lambda x: SExprList(SExprList(Symbol('_'), Symbol('extract'),
+                                         Decimal(width - 1), Decimal(0)), x)
+
 class PTXLibSMT2(PTXLib):
     type_dict = dict(SINGLETONS)
 
@@ -208,11 +212,11 @@ class PTXLibSMT2(PTXLib):
 
     @POW.register(f32)
     def _(self, aty: f32, bty: f32):
-        return FnCall("powf", 2)
+        return BinOp("pow_f32")
 
     @POW.register(f64)
     def _(self, aty: f64, bty: f64):
-        return FnCall("pow", 2)
+        return BinOp("pow_f64")
 
     @singledispatchmethod
     def FMA(self, aty, bty, cty):
@@ -313,13 +317,17 @@ class PTXLibSMT2(PTXLib):
                                              Symbol('zero_extend'),
                                              Decimal(64 - aty.w)), x)
 
+    # the original dictionary only had sext_X defined for X-width types
     @singledispatchmethod
     def sext_64(self, aty):
         raise NotImplementedError(f"sext_64({aty}) not implemented.")
 
     @sext_64.register(BV)
     def _(self, aty: BV):
-        return CastOp('s64')
+        if aty.w == 64:
+            return lambda x: x
+        else:
+            raise NotImplementedError('sext_64({aty}) not implemented.')
 
     @singledispatchmethod
     def sext_32(self, aty):
@@ -327,7 +335,10 @@ class PTXLibSMT2(PTXLib):
 
     @sext_32.register(BV)
     def _(self, aty: BV):
-        return CastOp('s32')
+        if aty.w == 32:
+            return lambda x: x
+        else:
+            raise NotImplementedError('sext_32({aty}) not implemented.')
 
     @singledispatchmethod
     def sext_16(self, aty):
@@ -335,7 +346,10 @@ class PTXLibSMT2(PTXLib):
 
     @sext_16.register(BV)
     def _(self, aty: BV):
-        return CastOp('s16')
+        if aty.w == 16:
+            return lambda x: x
+        else:
+            raise NotImplementedError('sext_16({aty}) not implemented.')
 
     @singledispatchmethod
     def truncate_64(self, aty):
@@ -343,7 +357,11 @@ class PTXLibSMT2(PTXLib):
 
     @truncate_64.register(BV)
     def _(self, aty: BV):
-        return CastOp('u64')
+        w = 64
+        if aty.w >= w:
+            return truncate(w)
+        else:
+            raise ValueError(f"Can't truncate {aty} of width {aty.w} to {w} bits")
 
     @singledispatchmethod
     def truncate_32(self, aty):
@@ -351,7 +369,12 @@ class PTXLibSMT2(PTXLib):
 
     @truncate_32.register(BV)
     def _(self, aty: BV):
-        return CastOp('u32')
+        w = 32
+        if aty.w >= w:
+            return truncate(w)
+        else:
+            raise ValueError(f"Can't truncate {aty} of width {aty.w} to {w} bits")
+
 
     @singledispatchmethod
     def truncate_16(self, aty):
@@ -359,7 +382,12 @@ class PTXLibSMT2(PTXLib):
 
     @truncate_16.register(BV)
     def _(self, aty: BV):
-        return CastOp('u16')
+        w = 16
+        if aty.w >= w:
+            return truncate(w)
+        else:
+            raise ValueError(f"Can't truncate {aty} of width {aty.w} to {w} bits")
+
 
     def _do_compare_2(self, op, aty, bty):
         if op in ('lt', 'le', 'gt', 'ge'):
