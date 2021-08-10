@@ -561,7 +561,7 @@ class PTXLibSMT2(PTXLib):
 
     @ADD_ROUND_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float, rty: str):
-        return self._fp_sat(self.ADD_ROUND(aty, bty, rty))
+        return self._fp_sat(aty, self.ADD_ROUND(aty, bty, rty))
 
     @singledispatchmethod
     def SUB_ROUND_SATURATE(self, aty, bty, rty):
@@ -569,7 +569,7 @@ class PTXLibSMT2(PTXLib):
 
     @SUB_ROUND_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float, rty: str):
-        return self._fp_sat(self.SUB_ROUND(aty, bty, rty))
+        return self._fp_sat(aty, self.SUB_ROUND(aty, bty, rty))
 
     @singledispatchmethod
     def MUL_ROUND_SATURATE(self, aty, bty, rty):
@@ -577,7 +577,7 @@ class PTXLibSMT2(PTXLib):
 
     @MUL_ROUND_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float, rty: str):
-        return self._fp_sat(self.MUL_ROUND(aty, bty, rty))
+        return self._fp_sat(aty, self.MUL_ROUND(aty, bty, rty))
 
     @singledispatchmethod
     def FMA_ROUND_SATURATE(self, aty, bty, cty, rty):
@@ -585,7 +585,7 @@ class PTXLibSMT2(PTXLib):
 
     @FMA_ROUND_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float, cty: SMT2Float, rty: str):
-        return self._fp_sat(self.FMA_ROUND(aty, bty, cty, rty))
+        return self._fp_sat(aty, self.FMA_ROUND(aty, bty, cty, rty))
 
     @singledispatchmethod
     def logical_op3(self, aty, bty, cty, imm):
