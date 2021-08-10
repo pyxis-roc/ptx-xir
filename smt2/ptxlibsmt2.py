@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT, BoolBinOp, FPBinOp
+from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT, BoolBinOp, FPBinOp, pred
 from xlatir.smt2ast import *
 
 from ptxlib import PTXLib
@@ -21,7 +21,7 @@ def extract_cf(x):
     # actually do a proper type check on x?
     return SExprList(SExprList(Symbol("_"), Symbol("extract"), Decimal(0), Decimal(0)), x)
 
-def RCP(ty, x, rm = Symbol('rn')):
+def RCP(ty, rm = Symbol('rn')):
     if isinstance(ty, f32):
         exp = 8
         signi = 24
@@ -31,12 +31,12 @@ def RCP(ty, x, rm = Symbol('rn')):
     else:
         raise NotImplementedError(f"Unknown type for rcp {ty}")
 
-    return SExprList(Symbol("fp.div"),
-                     Symbol(ROUND_MODES_SMT2[rm.v]),
-                     SExprList(SExprList(Symbol("_"), Symbol("to_fp"), Decimal(exp), Decimal(signi)),
-                               Symbol(ROUND_MODES_SMT2['rn']),
-                               Hexadecimal(1, width=(exp+signi)//4)),
-                     x)
+    return lambda x: SExprList(Symbol("fp.div"),
+                               Symbol(ROUND_MODES_SMT2[rm.v]),
+                               SExprList(SExprList(Symbol("_"), Symbol("to_fp"), Decimal(exp), Decimal(signi)),
+                                         Symbol(ROUND_MODES_SMT2['rn']),
+                                         Hexadecimal(1, width=(exp+signi)//4)),
+                               x)
 
 def generic_round(fn, nargs):
     if nargs == 1:
@@ -272,7 +272,7 @@ class PTXLibSMT2(PTXLib):
 
     @RCP_ROUND.register(SMT2Float)
     def _(self, aty: SMT2Float, rty: str):
-        return lambda x, m: RCP(aty, x, m)
+        return lambda x, m: RCP(aty, m)(x)
 
     @singledispatchmethod
     def SQRT_ROUND(self, aty, rty):
@@ -659,6 +659,58 @@ class PTXLibSMT2(PTXLib):
         w = aty.w
         # it's always unsigned
         return lambda x, y, z: SExprList(Symbol(f"SUB_CARRY_u{w}"), x, y, extract_cf(z))
+
+    @singledispatchmethod
+    def FTZ(self, aty):
+        raise NotImplementedError(f'FTZ({aty}) not implemented.')
+
+    @FTZ.register(SMT2Float)
+    def _(self, aty: SMT2Float):
+        return UnOp(f'FTZ_f{aty.w}')
+
+    @singledispatchmethod
+    def RCP(self, aty):
+        raise NotImplementedError(f'RCP({aty}) not implemented.')
+
+    @RCP.register(SMT2Float)
+    def _(self, aty: SMT2Float):
+        return RCP(aty, Symbol('rn'))  # this is approximate RCP
+
+    @singledispatchmethod
+    def MUL24(self, aty, bty):
+        raise NotImplementedError(f'MUL24({aty}, {bty}) not implemented.')
+
+    @MUL24.register(Signed)
+    def _(self, aty: Signed, bty: Signed):
+        return BinOp(f"MUL24_s{aty.w}")
+
+    @MUL24.register(Unsigned)
+    def _(self, aty: Unsigned, bty: Unsigned):
+        return BinOp(f"MUL24_u{aty.w}")
+
+    @singledispatchmethod
+    def MULWIDE(self, aty, bty):
+        raise NotImplementedError(f'MULWIDE({aty}, {bty}) not implemented.')
+
+    @MULWIDE.register(Signed)
+    def _(self, aty: Signed, bty: Signed):
+        return BinOp(f"MULWIDE_s{aty.w}")
+
+    @MULWIDE.register(Unsigned)
+    def _(self, aty: Unsigned, bty: Unsigned):
+        return BinOp(f"MULWIDE_u{aty.w}")
+
+    @singledispatchmethod
+    def booleanOp_xor(self, aty, bty):
+        raise NotImplementedError(f'booleanOp_xor({aty}, {bty}) not implemented.')
+
+    @booleanOp_xor.register(BV)
+    def _(self, aty: BV, bty: BV):
+        return BinOp("bvxor")
+
+    @booleanOp_xor.register(pred)
+    def _(self, aty: pred, bty: pred):
+        return BinOp("bvxor")
 
 def get_libs(backend):
     assert backend == "smt2", f"Don't support backend {backend} for ptxlibc"

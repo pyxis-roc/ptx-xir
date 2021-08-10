@@ -24,6 +24,7 @@ def RoundedFnCall(fn, nargs):
 
 class PTXLibC(PTXLib):
     type_dict = dict(SINGLETONS)
+    unsupported = frozenset(['RCP', 'FTZ', 'MUL24', 'MULWIDE', 'booleanOp_xor']) # these get converted to standard function calls
 
     def __init__(self):
         self.type_dict['str'] = str

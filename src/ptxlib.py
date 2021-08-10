@@ -1,6 +1,8 @@
 from xlatir.xir.xirlib import XIRLib
 
 class PTXLib(XIRLib):
+    unsupported = frozenset()
+
     def MIN(self, aty, bty):
         raise NotImplementedError(f"MIN({aty}, {bty}) not implemented.")
 
@@ -189,6 +191,22 @@ class PTXLib(XIRLib):
 
     def SUB_CARRY(self, aty, bty, cfty):
         raise NotImplementedError(f'SUB_CARRY({aty}, {bty}, {cfty} not implemented.')
+
+    def FTZ(self, aty):
+        raise NotImplementedError(f'FTZ({aty}) not implemented.')
+
+    def RCP(self, aty):
+        raise NotImplementedError(f'RCP({aty}) not implemented.')
+
+    def MUL24(self, aty, bty):
+        raise NotImplementedError(f'MUL24({aty}, {bty}) not implemented.')
+
+    def MULWIDE(self, aty, bty):
+        raise NotImplementedError(f'MULWIDE({aty}, {bty}) not implemented.')
+
+    # used only in the SMT2 backend
+    def booleanOp_xor(self, aty, bty):
+        raise NotImplementedError(f'booleanOp_xor({aty}, {bty}) not implemented.')
 
 def get_libs(backend):
     # hack
