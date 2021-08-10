@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT, BoolBinOp
+from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT, BoolBinOp, FPBinOp
 from xlatir.smt2ast import *
 
 from ptxlib import PTXLib
@@ -516,8 +516,10 @@ class PTXLibSMT2(PTXLib):
                                                    SExprList(Symbol("fp.isNaN"), x),
                                                    SExprList(Symbol("fp.isNaN"), y)))
 
-    def _fp_sat(self, fn):
-        return lambda *args: f"SATURATE({fn(*args)})"
+    def _fp_sat(self, aty, fn):
+        assert isinstance(aty, SMT2Float)
+        sfn = f"SATURATE_f{aty.w}"
+        return lambda *args: SExprList(Symbol(sfn), fn(*args))
 
     @singledispatchmethod
     def ADD_SATURATE(self, aty, bty):
@@ -525,11 +527,11 @@ class PTXLibSMT2(PTXLib):
 
     @ADD_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._fp_sat(BinOpInfix("+"))
+        return self._fp_sat(aty, FPBinOp("fp.add", "roundNearestTiesToEven"))
 
     @ADD_SATURATE.register(s32)
     def _(self, aty: s32, bty: s32):
-        return FnCall('ADD_SATURATE_s32', 2)
+        return lambda x, y: SExprList(Symbol('ADD_SATURATE_s32'), x, y)
 
     @singledispatchmethod
     def SUB_SATURATE(self, aty, bty):
@@ -537,11 +539,11 @@ class PTXLibSMT2(PTXLib):
 
     @SUB_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._fp_sat(BinOpInfix("-"))
+        return self._fp_sat(aty, FPBinOp("fp.sub", "roundNearestTiesToEven"))
 
     @SUB_SATURATE.register(s32)
     def _(self, aty: s32, bty: s32):
-        return FnCall('SUB_SATURATE_s32', 2)
+        return lambda x, y: SExprList(Symbol('SUB_SATURATE_s32'), x, y)
 
     @singledispatchmethod
     def MUL_SATURATE(self, aty, bty):
@@ -549,7 +551,7 @@ class PTXLibSMT2(PTXLib):
 
     @MUL_SATURATE.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._fp_sat(BinOpInfix("*"))
+        return self._fp_sat(aty, FPBinOp("fp.mul", "roundNearestTiesToEven"))
 
     # there is no integer version of mul saturate
 
