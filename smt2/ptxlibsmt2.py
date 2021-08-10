@@ -4,7 +4,7 @@ except ImportError:
     from singledispatchmethod import singledispatchmethod
 
 from xlatir.xir.xirlib import XIRLib
-from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT
+from xlatir.xir.xirlibsmt2 import SMT2BasicType, SMT2Float, SINGLETONS, Signed, Unsigned, BV, u64, u32, u16, u8, f64, f32, s32, s64, s16, BinOp, UnOp, bool_to_pred, pred_to_bool, b1, do_SHIFT, BoolBinOp
 from xlatir.smt2ast import *
 
 from ptxlib import PTXLib
@@ -64,24 +64,23 @@ class PTXLibSMT2(PTXLib):
 
     @MIN.register(f32)
     def _(self, aty: f32, bty: f32):
-        return FnCall("fminf_ptx", 2)
+        return BinOp("MIN_f32")
 
     @MIN.register(f64)
     def _(self, aty: f64, bty: f64):
-        return FnCall("fmin_ptx", 2)
+        return BinOp("MIN_f64")
 
-    @MIN.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return FnCall("MIN", 2)
+    @MIN.register(Unsigned)
+    def _(self, aty: Unsigned, bty: Unsigned):
+        return lambda x, y: SExprList(Symbol("ite"), SExprList(Symbol("bvult"), x, y), x, y)
 
-    # TODO: get rid of this and replace it with MIN
-    @singledispatchmethod
+    @MIN.register(Signed)
+    def _(self, aty: Signed, bty: Signed):
+        return lambda x, y: SExprList(Symbol("ite"), SExprList(Symbol("bvslt"), x, y), x, y)
+
     def min(self, aty, bty):
-        raise NotImplementedError(f"min({aty}, {bty}) not implemented.")
+        return self.MIN(aty, bty)
 
-    @min.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return FnCall("MIN", 2)
 
     @singledispatchmethod
     def MAX(self, aty, bty):
@@ -89,15 +88,19 @@ class PTXLibSMT2(PTXLib):
 
     @MAX.register(f32)
     def _(self, aty: f32, bty: f32):
-        return FnCall("fmaxf_ptx", 2)
+        return BinOp("MAX_f32")
 
     @MAX.register(f64)
     def _(self, aty: f64, bty: f64):
-        return FnCall("fmax_ptx", 2)
+        return BinOp("MAX_f64")
 
-    @MAX.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return FnCall("MAX", 2)
+    @MAX.register(Signed)
+    def _(self, aty: Signed, bty: Signed):
+        return lambda x, y: SExprList(Symbol("ite"), SExprList(Symbol("bvslt"), x, y), y, x)
+
+    @MAX.register(Unsigned)
+    def _(self, aty: Unsigned, bty: Unsigned):
+        return lambda x, y: SExprList(Symbol("ite"), SExprList(Symbol("bvult"), x, y), y, x)
 
     @singledispatchmethod
     def SAR(self, aty, bty):
@@ -358,14 +361,36 @@ class PTXLibSMT2(PTXLib):
     def _(self, aty: BV):
         return CastOp('u16')
 
-    def _float_cmp(self, fn):
-        tmp = fn(SMT2BasicType(), SMT2BasicType())
-        # TODO: paren
-        return lambda x, y: f"(!(isnan({x}) || isnan({y}))) && {tmp(x, y)}"
+    def _do_compare_2(self, op, aty, bty):
+        if op in ('lt', 'le', 'gt', 'ge'):
+            assert type(aty) == type(bty), f"Incorrect type signature for compare {op}({aty},{bty})"
+            if isinstance(aty, Unsigned):
+                op = "bvu" + op
+            elif isinstance(aty, Signed):
+                op = "bvs" + op
+            elif isinstance(aty, SMT2Float):
+                op = "fp." + op
+                if op in ("fp.le", "fp.ge"): op += "q" # le -> leq, ge -> geq
+        elif op in ('lo', 'ls', 'hi', 'hs'):
+            #TODO: type check?
+            xlat = {'lo': 'lt', 'ls': 'le', 'hi': 'gt', 'hs': 'ge'}
+            op = "bvu" + xlat[op]
+        else:
+            raise NotImplementedError(f"Unknown comparison operator {op}")
 
-    def _float_cmp_unordered(self, fn):
-        tmp = fn(SMT2BasicType(), SMT2BasicType())
-        return lambda x, y: f"isnan({x}) || isnan({y}) || {tmp(x, y)}"
+        # this is a bool binop
+        return lambda x, y: bool_to_pred(SExprList(Symbol(op), x, y))
+
+    def _do_compare_unordered(self, op, aty, bty, ofn):
+        assert op[-1] == 'u' # unordered
+
+        orig_fn = ofn(aty, bty)
+        opfn = lambda x, y: orig_fn(x, y).v[1] # strip the bool_to_pred
+
+        return lambda x, y: bool_to_pred(SExprList(Symbol("or"),
+                                                   SExprList(Symbol("fp.isNaN"), x),
+                                                   SExprList(Symbol("fp.isNaN"), y),
+                                                   opfn(x, y)))
 
     @singledispatchmethod
     def compare_eq(self, aty, bty):
@@ -373,11 +398,11 @@ class PTXLibSMT2(PTXLib):
 
     @compare_eq.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_eq)
+        return BoolBinOp('fp.eq')
 
     @compare_eq.register(SMT2BasicType)
     def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('==')
+        return BoolBinOp('=')
 
     @singledispatchmethod
     def compare_equ(self, aty, bty):
@@ -385,7 +410,7 @@ class PTXLibSMT2(PTXLib):
 
     @compare_equ.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_eq)
+        return self._do_compare_unordered('equ', aty, bty, self.compare_eq)
 
     @singledispatchmethod
     def compare_ne(self, aty, bty):
@@ -393,11 +418,16 @@ class PTXLibSMT2(PTXLib):
 
     @compare_ne.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_ne)
+        return lambda x, y: bool_to_pred(SExprList(Symbol("and"),
+                                                   SExprList(Symbol("not"),
+                                                             SExprList(Symbol("or"),
+                                                                       SExprList(Symbol("fp.isNaN"), x),
+                                                                       SExprList(Symbol("fp.isNaN"), y))), SExprList(Symbol("not"), SExprList(Symbol('fp.eq'), x, y))))
+
 
     @compare_ne.register(SMT2BasicType)
     def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('!=')
+        return lambda x, y: bool_to_pred(SExprList(Symbol("not"), SExprList(Symbol('='), x, y)))
 
     @singledispatchmethod
     def compare_neu(self, aty, bty):
@@ -405,19 +435,10 @@ class PTXLibSMT2(PTXLib):
 
     @compare_neu.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_ne)
+        return self._do_compare_unordered('neu', aty, bty, self.compare_ne)
 
-    @singledispatchmethod
     def compare_lt(self, aty, bty):
-        raise NotImplementedError(f"compare_lt({aty}, {bty}) not implemented.")
-
-    @compare_lt.register(SMT2Float)
-    def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_lt)
-
-    @compare_lt.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('<')
+        return self._do_compare_2('lt', aty, bty)
 
     @singledispatchmethod
     def compare_ltu(self, aty, bty):
@@ -425,19 +446,10 @@ class PTXLibSMT2(PTXLib):
 
     @compare_ltu.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_lt)
+        return self._do_compare_unordered('ltu', aty, bty, self.compare_lt)
 
-    @singledispatchmethod
     def compare_le(self, aty, bty):
-        raise NotImplementedError(f"compare_le({aty}, {bty}) not implemented.")
-
-    @compare_le.register(SMT2Float)
-    def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_le)
-
-    @compare_le.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('<=')
+        return self._do_compare_2('le', aty, bty)
 
     @singledispatchmethod
     def compare_leu(self, aty, bty):
@@ -445,19 +457,10 @@ class PTXLibSMT2(PTXLib):
 
     @compare_leu.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_le)
+        return self._do_compare_unordered('leu', aty, bty, self.compare_le)
 
-    @singledispatchmethod
     def compare_gt(self, aty, bty):
-        raise NotImplementedError(f"compare_gt({aty}, {bty}) not implemented.")
-
-    @compare_gt.register(SMT2Float)
-    def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_gt)
-
-    @compare_gt.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('>')
+        return self._do_compare_2('gt', aty, bty)
 
     @singledispatchmethod
     def compare_gtu(self, aty, bty):
@@ -465,19 +468,10 @@ class PTXLibSMT2(PTXLib):
 
     @compare_gtu.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_gt)
+        return self._do_compare_unordered('gtu', aty, bty, self.compare_gt)
 
-    @singledispatchmethod
     def compare_ge(self, aty, bty):
-        raise NotImplementedError(f"compare_ge({aty}, {bty}) not implemented.")
-
-    @compare_ge.register(SMT2Float)
-    def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp(self.compare_ge)
-
-    @compare_ge.register(SMT2BasicType)
-    def _(self, aty: SMT2BasicType, bty: SMT2BasicType):
-        return BinOpInfix('>=')
+        return self._do_compare_2('ge', aty, bty)
 
     @singledispatchmethod
     def compare_geu(self, aty, bty):
@@ -485,39 +479,20 @@ class PTXLibSMT2(PTXLib):
 
     @compare_geu.register(SMT2Float)
     def _(self, aty: SMT2Float, bty: SMT2Float):
-        return self._float_cmp_unordered(self.compare_ge)
+        return self._do_compare_unordered('geu', aty, bty, self.compare_ge)
 
-    @singledispatchmethod
+
     def compare_lo(self, aty, bty):
-        raise NotImplementedError(f"compare_lo({aty}, {bty}) not implemented.")
+        return self._do_compare_2('lo', aty, bty)
 
-    @compare_lo.register(Unsigned)
-    def _(self, aty: Unsigned, bty: Unsigned):
-        return BinOpInfix('<')
-
-    @singledispatchmethod
     def compare_ls(self, aty, bty):
-        raise NotImplementedError(f"compare_ls({aty}, {bty}) not implemented.")
+        return self._do_compare_2('ls', aty, bty)
 
-    @compare_ls.register(Unsigned)
-    def _(self, aty: Unsigned, bty: Unsigned):
-        return BinOpInfix('<=')
-
-    @singledispatchmethod
     def compare_hi(self, aty, bty):
-        raise NotImplementedError(f"compare_hi({aty}, {bty}) not implemented.")
+        return self._do_compare_2('hi', aty, bty)
 
-    @compare_hi.register(Unsigned)
-    def _(self, aty: Unsigned, bty: Unsigned):
-        return BinOpInfix('>')
-
-    @singledispatchmethod
     def compare_hs(self, aty, bty):
-        raise NotImplementedError(f"compare_hs({aty}, {bty}) not implemented.")
-
-    @compare_hs.register(Unsigned)
-    def _(self, aty: Unsigned, bty: Unsigned):
-        return BinOpInfix('>=')
+        return self._do_compare_2('hs', aty, bty)
 
     @singledispatchmethod
     def compare_num(self, aty, bty):
