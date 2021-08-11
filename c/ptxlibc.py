@@ -28,6 +28,7 @@ class PTXLibC(PTXLib):
 
     def __init__(self):
         self.type_dict['str'] = str
+        self.type_dict['RM'] = str # in alias-preserving
         self.type_dict['int'] = int # used for carryflag
 
     def get_dispatch_types(self, fnty, xirty):
