@@ -8,6 +8,7 @@
 import ast
 import argparse
 import astunparse
+from xlatir.xir.astcompat import AC
 
 ROUND_SAT_ARITH_FNS = set(['ADD_ROUND', 'SUB_ROUND', 'MUL_ROUND', 'DIV_ROUND', 'FMA_ROUND', 'SQRT_ROUND', 'RCP_ROUND',  'ADD_ROUND_SATURATE',  'SUB_ROUND_SATURATE', 'MUL_ROUND_SATURATE', 'FMA_ROUND_SATURATE'])
 
@@ -19,15 +20,15 @@ class RewritePythonisms(ast.NodeTransformer):
 
     def _is_float_constant_constructor(self, n):
         if isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'float':
-            if isinstance(n.args[0], ast.Str):
-                return n.args[0].s.lower() in ("nan",
-                                               "+nan",
-                                               "-nan",
-                                               "+nan",
-                                               "+inf",
-                                               "inf",
-                                               "-inf",
-                                               "-0.0")
+            if isinstance(n.args[0], AC.isStr):
+                return AC.value(n.args[0], (str,)).lower() in ("nan",
+                                                       "+nan",
+                                                       "-nan",
+                                                       "+nan",
+                                                       "+inf",
+                                                       "inf",
+                                                       "-inf",
+                                                       "-0.0")
         return False
 
     # TODO: handle machine_specific
@@ -43,14 +44,14 @@ class RewritePythonisms(ast.NodeTransformer):
         def get_keys(msn, keys=None):
             if isinstance(msn, ast.Subscript):
                 if isinstance(msn.value, ast.Name) and msn.value.id == 'machine_specific':
-                    assert isinstance(msn.slice.value, ast.Str), f"Don't support {msn.slice}"
-                    v = msn.slice.value.s
+                    assert isinstance(msn.slice.value, AC.isStr), f"Don't support {msn.slice}"
+                    v = AC.value(msn.slice.value, (str,))
                     keys.append(v)
                     return True
                 elif isinstance(msn.value, ast.Subscript):
                     if get_keys(msn.value, keys):
-                        assert isinstance(msn.slice.value, ast.Str), f"Don't support {msn.slice}"
-                        v = msn.slice.value.s
+                        assert isinstance(msn.slice.value, AC.isStr), f"Don't support {msn.slice}"
+                        v = AC.value(msn.slice.value, (str,))
                         keys.append(v)
                         return True
                     else:
@@ -85,11 +86,12 @@ class RewritePythonisms(ast.NodeTransformer):
 
         return self.generic_visit(node)
 
-    SUFFIX_FNS = {'compare': (2, ast.Str),
-                  'zext': (1, ast.Num),
-                  'ReadByte': (0, (ast.Str, ast.NameConstant)),
-                  'truncate': (1, ast.Num),
-                  'sext': (1, ast.Num),
+    # this table is kinda meaningless in 3.8
+    SUFFIX_FNS = {'compare': (2, AC.isStr),
+                  'zext': (1, AC.isNum),
+                  'ReadByte': (0, AC.isStr + AC.isNameConstant),
+                  'truncate': (1, AC.isNum),
+                  'sext': (1, AC.isNum),
                   }
 
     def add_fn_suffix(self, node):
@@ -97,15 +99,16 @@ class RewritePythonisms(ast.NodeTransformer):
         arg = node.args[argid]
 
         assert isinstance(arg, arg_type), f"{node.func.id} does not have {arg_type} as argument #{argid}, actual type is {type(arg)}"
-        if isinstance(arg, ast.Str):
-            suffix = arg.s
-        elif isinstance(arg, ast.Num):
-            suffix = str(arg.n)
-        elif isinstance(arg, ast.NameConstant):
-            if arg.value is None:
+        if isinstance(arg, AC.isStr + AC.isNum + AC.isNameConstant):
+            argvalue = AC.value(arg)
+            if isinstance(argvalue, str):
+                suffix = argvalue
+            elif isinstance(argvalue, int):
+                suffix = str(argvalue)
+            elif isinstance(argvalue, type(None)):
                 suffix = ''
             else:
-                raise NotImplementedError(f"Don't support NamedConstant with value = {arg.value}")
+                raise NotImplementedError(f"Don't support argvalue with value = {argvalue}")
         else:
             raise NotImplementedError(f"Don't support {arg_type} as suffix")
 
@@ -124,15 +127,15 @@ class RewritePythonisms(ast.NodeTransformer):
             if node.func.id in self.SUFFIX_FNS:
                 return self.add_fn_suffix(node)
             elif node.func.id.startswith('extractAndSignOrZeroExt'):
-                assert isinstance(node.args[2], ast.Num) and node.args[2].n == 32
-                assert isinstance(node.args[1], ast.NameConstant) and node.args[1].value in (True, False)
+                assert isinstance(node.args[2], AC.isNum) and AC.value(node.args[2], (int,)) == 32
+                assert isinstance(node.args[1], AC.isNameConstant) and AC.value(node.args[1]) in (True, False)
                 # This is not necessary, but could simplify implementations?
-                if node.args[1].value == False:
+                if AC.value(node.args[1]) == False:
                     node.func.id = "extractAndZeroExt" + node.func.id[len("extractAndSignOrZeroExt"):]
-                elif node.args[1].value == True:
+                elif AC.value(node.args[1]) == True:
                     node.func.id = "extractAndSignExt" + node.func.id[len("extractAndSignOrZeroExt"):]
                 else:
-                    assert False, f"Unsupported {node.args[1].value}"
+                    assert False, f"Unsupported {AC.value(node.args[1])}"
 
                 node.args = node.args[0:1] # this will happen before Assign
             elif node.func.id in ROUND_SAT_ARITH_FNS:
@@ -147,7 +150,7 @@ class RewritePythonisms(ast.NodeTransformer):
                     node.args.pop()
 
             elif node.func.id == 'booleanOp':
-                assert isinstance(node.args[2], ast.Str)
+                assert isinstance(node.args[2], AC.isStr)
                 if node.args[2].s == 'and':
                     node = ast.BoolOp(op=ast.And(), values=[node.args[0], node.args[1]])
                 elif node.args[2].s == 'or':
@@ -167,7 +170,7 @@ class RewritePythonisms(ast.NodeTransformer):
                                                                                  node.args[1])]),
                                           ])
                     else:
-                        node.func.id = 'booleanOp_' + node.args[2].s
+                        node.func.id = 'booleanOp_' + AC.value(node.args[2], (str,))
                         node.args.pop()
 
                 return node
@@ -177,7 +180,7 @@ class RewritePythonisms(ast.NodeTransformer):
                                     args=[node.args[0], node.args[1]],
                                     keywords={})
             elif node.func.id == 'float':
-                if not isinstance(node.args[0], ast.Str):
+                if not isinstance(node.args[0], AC.isStr):
                     return node.args[0] # don't support float as a type cast
             elif node.func.id == 'int':
                 return node.args[0] # don't support int as a type cast
@@ -186,22 +189,22 @@ class RewritePythonisms(ast.NodeTransformer):
                     # though we should support step...
                     raise NotImplementedError(f"range with {len(node.args)} not supported")
 
-                if not (isinstance(node.args[0], ast.Num) and isinstance(node.args[1], ast.Num)):
+                if not (isinstance(node.args[0], AC.isNum) and isinstance(node.args[1], AC.isNum)):
                     raise NotImplementedError(f"range with non-constant arguments not supported")
             elif node.func.id in ('SHL', 'SHR', 'SAR'):
                 node = self.generic_visit(node)
                 #TODO: the greater than is because of PTX...
-                assert len(node.args) >= 2, f"{node.func.id} needs two arguments" 
-                if isinstance(node.args[1], ast.Num):
+                assert len(node.args) >= 2, f"{node.func.id} needs two arguments"
+                if isinstance(node.args[1], AC.isNum):
                     node.func.id = node.func.id + "_LIT"
             elif node.func.id == 'BITSTRING':
                 node = self.generic_visit(node)
-                assert isinstance(node.args[3], ast.Num), f"BITSTRING needs a constant size: {node.args[3]}"
-                node.func.id += "_" + str(node.args[3].n)
+                assert isinstance(node.args[3], AC.isNum), f"BITSTRING needs a constant size: {node.args[3]}"
+                node.func.id += "_" + str(AC.value(node.args[3], (int,)))
             elif node.func.id == 'FROM_BITSTRING':
                 node = self.generic_visit(node)
-                assert isinstance(node.args[1], ast.Num), f"FROM_BITSTRING needs a constant size: {node.args[1]}"
-                node.func.id += "_" + str(node.args[1].n)
+                assert isinstance(node.args[1], AC.isNum), f"FROM_BITSTRING needs a constant size: {node.args[1]}"
+                node.func.id += "_" + str(AC.value(node.args[1], (int,)))
             elif self.elim_x_value and node.func.id == 'set_value':
                 # ptx relies on set_value to set type on argument, once
                 # type annotations are on _global_*, we can get rid of self.noptx
@@ -230,7 +233,7 @@ class RewritePythonisms(ast.NodeTransformer):
                     rhs.args.append(node.targets[0])
                     return [ast.AnnAssign(target=ast.Name(id=node.targets[0].id),
                                           annotation=ast.Subscript(value=ast.Name(id="u32"),
-                                                                   slice=ast.Num(n=width),
+                                                                   slice=AC.mk_constant(width),
                                           ),
                                           value=None,
                                           simple=1),
