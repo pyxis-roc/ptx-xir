@@ -98,8 +98,12 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     g = c_generator.CGenerator()
 
     if not pii.base_instruction:
-        arglist = [g.visit(p) for p in decl.type.args.params]
-        callargs = [d.name for d in decl.type.args.params]
+        if decl.type.args is not None:
+            arglist = [g.visit(p) for p in decl.type.args.params]
+            callargs = [d.name for d in decl.type.args.params]
+        else:
+            arglist = []
+            callargs = []
     else:
         arglist = [g.visit(p) for p in decl.type.args.params[:pii.nargs]]
         callargs = [d.name for d in decl.type.args.params[:pii.nargs]]
@@ -120,13 +124,17 @@ def write_ptx_harness(pii, insn: str, decl, ret_type: str, base_pii = None):
     driver_func_defn = [f"void test_{funcname}({ret_args}, {', '.join(arglist)}) {{"]
 
     if 'cc_reg' in pii.output_types:
-        CC_REG_ARG = callargs[pii.arg_types.index('cc_reg')]
+        try:
+            CC_REG_ARG = callargs[pii.arg_types.index('cc_reg')]
+        except ValueError:
+            #TODO: update for new out-only cc_reg
+            CC_REG_ARG = None
 
     if len(pii.output_types) == 1:
         driver_func_defn.append(f"\t*result = {ptx_funcname}({', '.join(callargs)});")
     elif len(pii.output_types) == 2 and 'cc_reg' in pii.output_types:
         driver_func_defn.append(f"\t*result0 = {ptx_funcname}({', '.join(callargs)});")
-        driver_func_defn.append(f"\tresult1->cf = {CC_REG_ARG}->cf;")
+        if CC_REG_ARG is not None: driver_func_defn.append(f"\tresult1->cf = {CC_REG_ARG}->cf;")
     else:
         driver_func_defn.append(f"struct retval_{insn} result;")
         driver_func_defn.append(f"\tresult = {ptx_funcname}({', '.join(callargs)});")
