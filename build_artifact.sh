@@ -22,5 +22,7 @@ make c TARGET=$BUILD
 make $BUILD/smt2 TARGET=$BUILD
 make smt2 TARGET=$BUILD
 
+# TODO: test cases
+
 # build artifact
 tar jcvf build.tar.bz2 $BUILD
