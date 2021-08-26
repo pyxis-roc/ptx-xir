@@ -1,0 +1,50 @@
+# This is a basic workflow that is manually triggered
+
+name: Build artifact
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    # The type of runner that the job will run on
+    runs-on: self-hosted
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    - name: Checkout the ROCetta repository
+      uses: actions/checkout@v2
+      with:
+        repository: pyxis-roc/ROCetta
+        token: ${{ secrets.PAT_PYXIS_MA }}
+        path: ROCetta
+    - name: Run checkenv.sh
+      run: |
+        cd $GITHUB_WORKSPACE/ROCetta
+        ./check_env.sh
+    - name: Run Makefile.get
+      env:
+        PAT_PYXIS_MA: ${{ secrets.PAT_PYXIS_MA }}
+      run: |
+        make -C $GITHUB_WORKSPACE/ROCetta -f Makefile.get
+    - name: Install python3.8 virtual environment
+      run: |
+        python3.8 -m venv $GITHUB_WORKSPACE/ROCetta/rocettaenv
+    - name: Run Makefile.install
+      run: |
+        source $GITHUB_WORKSPACE/ROCetta/rocettaenv/bin/activate
+        make -C $GITHUB_WORKSPACE/ROCetta -f Makefile.install rocetta gpusemtest xlatir semantics-compiler ptx-xir
+    - name: Build artifact
+      run: |
+        source $GITHUB_WORKSPACE/ROCetta/rocettaenv/bin/activate
+        cd $GITHUB_WORKSPACE/ROCetta/ptx-xir
+        ./build_artifact.sh
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ptx-xir-build
+        path: ROCetta/ptx-xir/build.tar.bz2
