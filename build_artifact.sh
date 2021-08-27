@@ -9,18 +9,14 @@ BUILD=${1:-build-$REV}
 mkdir -p $BUILD
 
 # assumes we're running in ROCetta
-make -C .. semantics-compiler/exec_semantics/ptx_executable_semantics_xir.py ptx-xir/src/utils.py
+make -C .. semantics-compiler/exec_semantics/ptx_executable_semantics_xir.py
+# ptx-xir/src/utils.py
 
-cp ../semantics-compiler/exec_semantics/ptx_executable_semantics_xir.py $BUILD/ptx_executable_semantics_xir.py.orig
-src/rewrite.py $BUILD/ptx_executable_semantics_xir.py.orig $BUILD/ptx_executable_semantics_xir.py c
+make legacy SCDIR=../semantics-compiler TARGET=$BUILD
 
 # syntax-checking is integrated
 
-make $BUILD/c TARGET=$BUILD
-make c TARGET=$BUILD
-
-make $BUILD/smt2 TARGET=$BUILD
-make smt2 TARGET=$BUILD
+make c smt2 TARGET=$BUILD
 
 # TODO: test cases
 
