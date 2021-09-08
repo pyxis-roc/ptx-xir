@@ -5,7 +5,7 @@ TARGET ?= build
 XIR2X=xir2x.py
 INSNS ?= all
 
-all: $(TARGET)/ptxc.c
+all: $(TARGET)/ptxc.c $(TARGET)/Makefile
 
 $(TARGET)/ptxc_utils_template.h: $(CSRC)/ptxc_utils_template.tmplh $(CSRC)/ptxc_utils_template.script
 	$(CSRC)/ctempl_script.py $(CSRC)/ptxc_utils_template.script $@
@@ -18,6 +18,9 @@ $(TARGET)/lop3_lut.h: $(TOOLS)/lop3_lut_gen.py
 
 $(TARGET)/readbyte_prmt.h: $(TOOLS)/prmt_readbyte_gen.py
 	$(TOOLS)/prmt_readbyte_gen.py c > $@
+
+$(TARGET)/Makefile: Makefile.lib
+	cp $< $@
 
 .PHONY: test
 

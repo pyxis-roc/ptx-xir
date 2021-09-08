@@ -1,0 +1,18 @@
+# -*- mode: makefile -*-
+CC=gcc
+USE_PTXM=1
+PTXM_INSTALL=../../../ptx-math/install
+SRC=../../c/
+ifeq ($(USE_PTXM),1)
+PTXM_FLAGS=-L$(PTXM_INSTALL)/lib -I$(PTXM_INSTALL)/include -lptxm -DUSE_PTXM
+else
+PTXM_FLAGS=
+endif
+
+libptxc.so: ptxc.c lop3_lut.h ptxc_utils_template.h readbyte_prmt.h $(SRC)/128types.h
+	$(CC) -shared -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -I$(SRC) -I. -o $@
+
+.PHONY: clean
+
+clean:
+	rm -f libptxc.so
