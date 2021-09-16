@@ -4,7 +4,8 @@ USE_PTXM=1
 PTXM_INSTALL=../../../ptx-math/install
 SRC=../../c/
 ifeq ($(USE_PTXM),1)
-PTXM_FLAGS=-L$(PTXM_INSTALL)/lib -I$(PTXM_INSTALL)/include -lptxm -DUSE_PTXM
+#PTXM_FLAGS=-L$(PTXM_INSTALL)/lib -I$(PTXM_INSTALL)/include -lptxm -DUSE_PTXM
+PTXM_FLAGS=-I$(PTXM_INSTALL)/include $(PTXM_INSTALL)/lib/libptxm.a -DUSE_PTXM
 else
 PTXM_FLAGS=
 endif
