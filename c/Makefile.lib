@@ -10,13 +10,15 @@ else
 PTXM_FLAGS=
 endif
 
-ptxc.o: ptxc.c lop3_lut.h ptxc_utils_template.h readbyte_prmt.h $(SRC)/128types.h
-	$(CC) -c -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -I$(SRC) -I. -o $@
+all: libptxc.so ptxc.o
 
 libptxc.so: ptxc.c lop3_lut.h ptxc_utils_template.h readbyte_prmt.h $(SRC)/128types.h
 	$(CC) -shared -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -I$(SRC) -I. -o $@
 
+ptxc.o: ptxc.c lop3_lut.h ptxc_utils_template.h readbyte_prmt.h $(SRC)/128types.h
+	$(CC) -c -fPIC -O3 -g $< -lm $(PTXM_FLAGS) -I$(SRC) -I. -o $@
+
 .PHONY: clean
 
 clean:
-	rm -f libptxc.so
+	rm -f libptxc.so ptxc.o
