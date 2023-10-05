@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# SPDX-FileCopyrightText: 2020 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 def f4e(c):
     "Starting at c, extract next 4 bytes"
     for i in range(c, c + 4):

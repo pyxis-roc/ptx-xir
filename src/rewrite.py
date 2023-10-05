@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2021 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 #
 # rewrite.py
 # Decouple handling of Pythonisms in the PTX XIR from XIR proper.

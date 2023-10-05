@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2020 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 import math
 
 def read_integer_test_cases(tcfile, nargs):

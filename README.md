@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2021 University of Rochester
+
+SPDX-License-Identifier: LGPL-3.0-or-later
+-->
+
 # ptx-xir
 
 ![build status](https://github.com/pyxis-roc/ptx-xir/actions/workflows/build.yml/badge.svg)

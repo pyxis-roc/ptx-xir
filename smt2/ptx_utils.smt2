@@ -1,3 +1,9 @@
+;
+; SPDX-FileCopyrightText: 2020,2021 University of Rochester
+;
+; SPDX-License-Identifier: LGPL-3.0-or-later
+
+
 ; (set-logic QF_FPBV)
 
 (define-fun copysign_f32 ((x Float32) (y Float32)) Float32

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# SPDX-FileCopyrightText: 2021 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 set -e
 
 REV=`git rev-parse --short HEAD`

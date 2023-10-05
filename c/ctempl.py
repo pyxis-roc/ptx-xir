@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# SPDX-FileCopyrightText: 2020,2021 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 import argparse
 import pycparser
 from pycparser import c_ast, c_generator, c_parser

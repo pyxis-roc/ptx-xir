@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2021 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 lop3_dict = {0:lambda A,B,C:0,
 1:lambda A,B,C:((~A)&(~B)&(~C)),

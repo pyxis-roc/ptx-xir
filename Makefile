@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2021 University of Rochester
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
 TARGET ?= build
 CTESTSDIR ?= ../ptx-semantics-tests/v6.5/c
 SMT2TESTSDIR ?= ../ptx-semantics-tests/v6.5/ptx-smt2
