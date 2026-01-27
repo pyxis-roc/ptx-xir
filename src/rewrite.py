@@ -49,14 +49,14 @@ class RewritePythonisms(ast.NodeTransformer):
         def get_keys(msn, keys=None):
             if isinstance(msn, ast.Subscript):
                 if isinstance(msn.value, ast.Name) and msn.value.id == 'machine_specific':
-                    assert isinstance(msn.slice.value, AC.isStr), f"Don't support {msn.slice}"
-                    v = AC.value(msn.slice.value, (str,))
+                    assert isinstance(AC.get_slice_value(msn.slice), AC.isStr), f"Don't support {msn.slice}"
+                    v = AC.value(AC.get_slice_value(msn.slice), (str,))
                     keys.append(v)
                     return True
                 elif isinstance(msn.value, ast.Subscript):
                     if get_keys(msn.value, keys):
-                        assert isinstance(msn.slice.value, AC.isStr), f"Don't support {msn.slice}"
-                        v = AC.value(msn.slice.value, (str,))
+                        assert isinstance(AC.get_slice_value(msn.slice), AC.isStr), f"Don't support {msn.slice}"
+                        v = AC.value(AC.get_slice_value(msn.slice), (str,))
                         keys.append(v)
                         return True
                     else:
